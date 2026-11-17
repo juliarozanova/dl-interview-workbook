@@ -1,0 +1,124 @@
+/* Design tokens — colours ported from dopamine-dotfiles/.chezmoidata/palette.toml.
+   Light = "dopamine-light" (paper ground, the gentle green `func` #AEBA5A leads).
+   Dark  = "dopamine-dark"  (cool slate ground, lime green #C4D27A leads).            */
+
+@font-face { font-family: "Source Serif 4"; src: url(../fonts/source-serif-4-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Source Serif 4"; src: url(../fonts/source-serif-4-latin-400-italic.woff2) format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Source Serif 4"; src: url(../fonts/source-serif-4-latin-600-normal.woff2) format("woff2"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Source Serif 4"; src: url(../fonts/source-serif-4-latin-700-normal.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Inter"; src: url(../fonts/inter-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Inter"; src: url(../fonts/inter-latin-500-normal.woff2) format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Inter"; src: url(../fonts/inter-latin-600-normal.woff2) format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url(../fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url(../fonts/jetbrains-mono-latin-600-normal.woff2) format("woff2"); font-weight: 600; font-display: swap; }
+
+:root {
+  --font-prose: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius-s: 6px;
+  --radius: 10px;
+  --radius-l: 16px;
+  --sidebar-w: 272px;
+  --prose-w: 70ch;
+  --aside-w: 248px;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+
+:root, [data-theme="light"] {
+  color-scheme: light;
+  /* ground */
+  --bg: #F8F9FA;            /* bg */
+  --surface: #FFFFFF;       /* cards */
+  --panel: #F3F4F5;         /* panel_bg */
+  --shadow: #D3D4D5;        /* panel_shadow */
+  --line: #E7EAED;          /* line */
+  --guide: #E4E6E9;         /* guide_normal */
+  --gutter: #CCCFD3;        /* gutter_normal */
+  --gutter-active: #A0A6AC; /* gutter_active */
+  /* ink */
+  --ink: #1F2326;           /* on_accent — headings */
+  --text: #43484D;          /* prose (fg darkened for long-form reading) */
+  --fg: #5C6166;            /* fg — UI text */
+  --muted: #8A9199;         /* fg_idle */
+  /* the gentle green */
+  --green: #AEBA5A;         /* func / vcs_added */
+  --green-soft: #E0E7CD;    /* vcs_added_bg */
+  --green-wash: #EFF3E3;    /* half-strength wash for large areas */
+  --green-ink: #5F6B1C;     /* green dark enough for text (5.6:1 on bg) */
+  --on-green: #1F2326;      /* on_func */
+  /* supporting roles */
+  --teal: #60AB96;          /* tag / entity */
+  --teal-ink: #31786B;      /* string — links */
+  --mint: #4CBF99;          /* operator */
+  --accent: #CC8052;        /* accent / keyword (terracotta) */
+  --accent-soft: #F9EBE4;   /* vcs_removed_bg — hint wash */
+  --accent-ink: #9A5530;
+  --pink: #DB5E8C;          /* constant */
+  --error: #E65050;
+  --error-soft: #FBE9E7;
+  --error-ink: #B23A3A;
+  --selection: #C6D6D4;     /* selection_bg */
+  --line-hl: #E0E7CD;       /* linked-line highlight */
+  --card-shadow: 0 1px 0 rgba(31, 35, 38, .04), 0 6px 24px -12px rgba(31, 35, 38, .18);
+
+  /* syntax (dopamine-light, func nudged darker for contrast on paper) */
+  --syn-keyword: #CC8052;
+  --syn-func: #8A9632;
+  --syn-entity: #3E9580;
+  --syn-string: #31786B;
+  --syn-number: #DB5E8C;
+  --syn-operator: #3FAA86;
+  --syn-comment: #9EA1A6;
+  --syn-builtin: #3E9580;
+  --syn-name: #474C51;
+  --syn-punct: #7A8086;
+  --code-bg: #F3F4F5;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #2B343D;
+  --surface: #323B44;
+  --panel: #283039;
+  --shadow: #21282E;
+  --line: #3E4852;
+  --guide: #3E4852;
+  --gutter: #5A626A;
+  --gutter-active: #8A9299;
+  --ink: #EEF0F2;
+  --text: #D7DBDF;
+  --fg: #C3C8CD;
+  --muted: #8A9299;
+  --green: #C4D27A;
+  --green-soft: #3A4434;
+  --green-wash: #333D35;
+  --green-ink: #C4D27A;
+  --on-green: #2B343D;
+  --teal: #5CC1AE;
+  --teal-ink: #5CC1AE;
+  --mint: #4CCFA1;
+  --accent: #E6A46A;
+  --accent-soft: #42383A;
+  --accent-ink: #E6BA7E;
+  --pink: #CC5E87;
+  --error: #F0607D;
+  --error-soft: #46323C;
+  --error-ink: #F0839A;
+  --selection: #515F6E;
+  --line-hl: #3A4434;
+  --card-shadow: 0 1px 0 rgba(0, 0, 0, .15), 0 10px 30px -14px rgba(0, 0, 0, .55);
+
+  --syn-keyword: #75859C;
+  --syn-func: #C4D27A;
+  --syn-entity: #5CC1AE;
+  --syn-string: #DFE891;
+  --syn-number: #CC5E87;
+  --syn-operator: #4CCFA1;
+  --syn-comment: #90959B;
+  --syn-builtin: #5CC1AE;
+  --syn-name: #D7DBDF;
+  --syn-punct: #A3AAB1;
+  --code-bg: #242B33;
+}

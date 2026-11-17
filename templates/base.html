@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ page_title }}</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23AEBA5A'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='20' font-weight='700' text-anchor='middle' fill='%231F2326'%3E%E2%88%87%3C/text%3E%3C/svg%3E">
+<script>
+  (function () {
+    var t = localStorage.getItem("wb:theme");
+    if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.documentElement.dataset.theme = t;
+    if (localStorage.getItem("wb:nav") === "collapsed") document.documentElement.classList.add("nav-collapsed");
+  })();
+</script>
+<link rel="stylesheet" href="static/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="static/css/tokens.css">
+<link rel="stylesheet" href="static/css/base.css">
+<link rel="stylesheet" href="static/css/components.css">
+<link rel="stylesheet" href="static/css/syntax.css">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+<a class="skip" href="#main">Skip to content</a>
+<div class="shell">
+  <nav class="sidebar" id="sidebar" aria-label="Chapters">
+    <a class="brand" href="index.html">
+      <span class="brand-mark" aria-hidden="true">∇</span>
+      <span class="brand-text">Interview<br>Workbook</span>
+    </a>
+    {% for part in parts %}
+    <div class="nav-part">
+      <div class="nav-part-title"><span>Part {{ part.num }}</span> {{ part.title }}</div>
+      <ol class="nav-chapters">
+        {% for c in part.chapters %}
+        <li>
+          {% if c.href %}
+          <a class="nav-ch{% if ch and ch.slug == c.slug %} is-current{% endif %}" href="{{ c.href }}"
+             data-chapter-progress="{{ c.exercise_ids | join(',') }}"{% if ch and ch.slug == c.slug %} aria-current="page"{% endif %}>
+            <span class="nav-num">{{ c.num }}</span><span class="nav-title">{{ c.title }}</span>
+            <span class="nav-ring" aria-hidden="true"></span>
+          </a>
+          {% else %}
+          <span class="nav-ch is-soon" title="Coming in a later milestone">
+            <span class="nav-num">{{ c.num }}</span><span class="nav-title">{{ c.title }}</span>
+          </span>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+    {% endfor %}
+  </nav>
+  <div class="page">
+    <header class="topbar">
+      <button class="nav-toggle" type="button" aria-label="Toggle chapter list" aria-controls="sidebar" data-nav-toggle><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M7.5 3.5v13"/><path class="nav-toggle-arrow" d="M13 8l-2 2 2 2"/></svg></button>
+      <div class="topbar-crumb">{% block crumb %}{% endblock %}</div>
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Toggle light/dark theme">
+        <span class="theme-icon-light" aria-hidden="true">☀</span><span class="theme-icon-dark" aria-hidden="true">☾</span>
+      </button>
+    </header>
+    <main id="main">
+      {% block main %}{% endblock %}
+    </main>
+  </div>
+</div>
+<script src="static/vendor/katex/katex.min.js"></script>
+<script src="static/vendor/codemirror/codemirror.min.js" defer></script>
+<script src="static/js/runner.js" defer></script>
+<script src="static/js/app.js" defer></script>
+</body>
+</html>

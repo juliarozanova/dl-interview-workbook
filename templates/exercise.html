@@ -1,0 +1,189 @@
+{% macro dots(n) %}<span class="dots" title="Difficulty {{ n }}/3" aria-label="Difficulty {{ n }} of 3">{% for i in range(3) %}<span class="dot{% if i < n %} on{% endif %}"></span>{% endfor %}</span>{% endmacro %}
+
+{% macro solution_split(ex, heading) %}
+<div class="split" data-split>
+  <div class="split-code">
+    <div class="pane-label">{{ heading }}</div>
+    {{ ex.solution }}
+  </div>
+  <div class="split-explain">
+    <div class="pane-label">Why it works <span class="pane-hint">hover a note to highlight its lines</span></div>
+    {{ ex.explain }}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro hints_block(ex) %}
+{% if ex.hints %}
+<div class="hints" data-hints>
+  <ol class="hint-list">
+    {% for h in ex.hints %}<li class="hint" hidden>{{ h }}</li>{% endfor %}
+  </ol>
+  <button type="button" class="btn btn-ghost" data-hint-next>Need a hint? <span class="muted">(<span data-hint-count>0</span>/{{ ex.hints | length }})</span></button>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro local_box(ex) %}
+<div class="local-box" data-local>
+  <div class="local-head"><span class="local-badge">PyTorch · local</span> This one runs on your machine, in your own editor.</div>
+  <ol class="local-steps">
+    <li>Open <button type="button" class="copy-chip" data-copy="{{ ex.local.file }}" title="Copy path"><code>{{ ex.local.file }}</code></button>{% if ex.type == "debug" %} and fix the bug{% endif %}.</li>
+    <li>Run <button type="button" class="copy-chip" data-copy="pytest {{ ex.local.test }}" title="Copy command"><code>pytest {{ ex.local.test }}</code></button></li>
+    <li>When it's green, mark the exercise complete below.</li>
+  </ol>
+  <p class="muted small">Your file is created once and never overwritten by the build. The tests and solutions are regenerated each build. To check the reference passes, run <code>WB_IMPL=solutions pytest {{ ex.local.test }}</code>.</p>
+</div>
+{% endmacro %}
+
+{% macro render(ex) %}
+<section class="exercise" id="{{ ex.id }}" data-ex="{{ ex.id }}" data-type="{{ ex.type }}" data-blanks="{{ ex.n_blanks }}">
+  <article class="ex-card" tabindex="-1">
+    <header class="ex-head">
+      <div class="ex-kicker">
+        <span>Exercise {{ ex.number }}</span>
+        <span class="type-chip type-{{ ex.type }}">{{ ex.type }}</span>
+        <span class="done-chip" data-done-chip hidden>✓ complete</span>
+      </div>
+      <h2 class="ex-title"><a href="#{{ ex.id }}">{{ ex.title }}</a></h2>
+      <div class="ex-badges">
+        {{ dots(ex.difficulty) }}
+        <span class="badge" title="Time estimate"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="9" r="5.5"/><path d="M8 6v3l2 1.5M6.5 1.5h3"/></svg>{{ ex.time }} min</span>
+        <span class="badge badge-runtime">{{ ex.runtime_label }}</span>
+        <a class="badge badge-udl" href="{{ site.udl_url }}" target="_blank" rel="noopener" title="Understanding Deep Learning">UDL {{ ex.udl }} ↗</a>
+      </div>
+    </header>
+
+    {% if ex.theory %}<div class="prose ex-theory">{{ ex.theory }}</div>{% endif %}
+    {% if ex.prereq %}
+    <details class="prereq">
+      <summary><span class="prereq-icon" aria-hidden="true">✦</span> Before you start: what you need to know</summary>
+      <div class="prose">{{ ex.prereq }}</div>
+    </details>
+    {% endif %}
+
+    <div class="tabs" role="tablist" aria-label="Exercise layers">
+      {% for label in ex.tabs %}
+      <button type="button" role="tab" class="tab" id="{{ ex.id }}-tab{{ loop.index }}" aria-controls="{{ ex.id }}-panel{{ loop.index }}"
+              aria-selected="{{ 'true' if loop.first else 'false' }}" tabindex="{{ 0 if loop.first else -1 }}" data-tab="{{ loop.index }}">
+        <span class="tab-key" aria-hidden="true">{{ loop.index }}</span>{{ label }}<span class="tab-status" data-tab-status="{{ loop.index }}"></span>
+      </button>
+      {% endfor %}
+    </div>
+
+    {# ── Layer 1 ─────────────────────────────────────────── #}
+    <div class="panel" role="tabpanel" id="{{ ex.id }}-panel1" aria-labelledby="{{ ex.id }}-tab1" data-panel="1">
+      <div class="prose task">{{ ex.task }}</div>
+      {% if ex.starter_raw is defined and ex.runtime == "browser" %}
+      <div class="workspace">
+        <div class="pane-label">{{ "The suspect code: fix it here" if ex.type == "debug" else "Your implementation" }} <span class="pane-hint">saved in this browser · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs the tests</span></div>
+        <div class="editor-host" data-editor-host></div>
+        <textarea class="editor" spellcheck="false" data-editor data-ex="{{ ex.id }}" aria-label="Code editor">{{ ex.starter_raw | e }}</textarea>
+        <template data-starter>{{ ex.starter_raw | e }}</template>
+        <template data-tests>{{ ex.tests_raw | e }}</template>
+        <div class="runner" data-runner>
+          <div class="row">
+            <button type="button" class="btn btn-run" data-run><span class="run-icon" aria-hidden="true"></span>Run tests</button>
+            <span class="run-status" data-run-status aria-live="polite"></span>
+            <span class="row-spacer"></span>
+            <button type="button" class="btn btn-ghost btn-small" data-copy-editor>Copy code + tests</button>
+            <button type="button" class="btn btn-ghost btn-small" data-reset-editor>Reset</button>
+          </div>
+          <div class="results" data-results hidden></div>
+        </div>
+        {% if ex.local %}<p class="local-alt muted small">Prefer your own editor? The same exercise is in <code>{{ ex.local.file }}</code>. Test it with <code>pytest {{ ex.local.test }}</code>.</p>{% endif %}
+      </div>
+      {% elif ex.starter_raw is defined %}
+      <div class="pane-label">{{ "The suspect code" if ex.type == "debug" else "Starter" }} <span class="pane-hint">already in your workspace file below</span></div>
+      {{ ex.starter }}
+      {{ local_box(ex) }}
+      {% elif ex.type == "derive" %}
+      <div class="whiteboard" data-timer data-seconds="{{ (ex.time | int) * 60 }}">
+        <div class="wb-face" aria-live="polite"><span data-timer-face>{{ ex.time }}:00</span></div>
+        <div class="wb-copy">
+          <strong>Whiteboard mode.</strong> Stand up, grab a pen, and explain each step out loud as if to an interviewer.
+        </div>
+        <button type="button" class="btn" data-timer-toggle>Start timer</button>
+      </div>
+      {% endif %}
+      {% if ex.tests is defined %}
+      <details class="tests">
+        <summary>Tests your code must pass</summary>
+        {{ ex.tests }}
+      </details>
+      {% endif %}
+      {{ hints_block(ex) }}
+    </div>
+
+    {# ── Layer 2: scaffold ───────────────────────────────── #}
+    <div class="panel" role="tabpanel" id="{{ ex.id }}-panel2" aria-labelledby="{{ ex.id }}-tab2" data-panel="2" hidden>
+      <div class="scaffold-head">
+        <p class="muted small">Fill each blank, then press <kbd>Enter</kbd>. A wrong answer shows what idea is missing; after two tries you can reveal it.</p>
+        <div class="score" data-score aria-live="polite"><span data-score-n>0</span>/{{ ex.n_blanks }} <span class="score-label">correct</span></div>
+      </div>
+      <div class="scaffold {{ 'scaffold-code' if ex.scaffold_is_code else 'prose scaffold-prose' }}">{{ ex.scaffold }}</div>
+      <div class="hint-log" data-hint-log aria-live="polite"></div>
+      <div class="row">
+        <button type="button" class="btn" data-check-all>Check all</button>
+        <button type="button" class="btn btn-ghost" data-reset-blanks>Clear</button>
+      </div>
+    </div>
+
+    {# ── Layer 3: worked solution ────────────────────────── #}
+    <div class="panel" role="tabpanel" id="{{ ex.id }}-panel3" aria-labelledby="{{ ex.id }}-tab3" data-panel="3" hidden>
+      {% if ex.type == "derive" %}
+      <ol class="steps" data-steps>
+        {% for s in ex.steps %}
+        <li class="step{% if not loop.first %} is-hidden{% endif %}" data-step="{{ loop.index }}">
+          <div class="step-num">{{ loop.index }}</div>
+          <div class="step-body prose"><div class="step-content">{{ s }}</div></div>
+        </li>
+        {% endfor %}
+      </ol>
+      <div class="row">
+        <button type="button" class="btn" data-step-next>Next step ↓</button>
+        <button type="button" class="btn btn-ghost" data-step-all>Reveal all</button>
+        <span class="muted small" data-step-count>1 / {{ ex.steps | length }}</span>
+      </div>
+      {% if ex.solution is defined %}
+      <h3 class="sub">Check it numerically</h3>
+      {{ solution_split(ex, "Gradient + finite-difference check") }}
+      {% endif %}
+      <div class="rating" data-rating>
+        <span class="rating-q">How did that go out loud?</span>
+        {% for r in ["again", "hard", "good", "easy"] %}
+        <button type="button" class="btn btn-rate" data-rate="{{ r }}" aria-pressed="false">{{ r | capitalize }}</button>
+        {% endfor %}
+      </div>
+      {% else %}
+      {{ solution_split(ex, "Reference fix" if ex.type == "debug" else "Reference implementation") }}
+      {% endif %}
+    </div>
+
+    <footer class="ex-foot">
+      <button type="button" class="btn btn-done" data-done aria-pressed="false">
+        <span class="done-box" aria-hidden="true"></span><span data-done-label>Mark exercise complete</span>
+      </button>
+    </footer>
+  </article>
+
+  <aside class="ex-aside" aria-label="Margin notes">
+    <div class="note note-udl">
+      <div class="note-label">Read alongside</div>
+      <a href="{{ site.udl_url }}" target="_blank" rel="noopener">Prince, UDL {{ ex.udl }}</a>
+    </div>
+    {% if ex.tags %}
+    <div class="note">
+      <div class="note-label">Checklist</div>
+      <div class="tags">{% for t in ex.tags %}<span class="tag">{{ t | replace('-', ' ') }}</span>{% endfor %}</div>
+    </div>
+    {% endif %}
+    {% if ex.interview %}
+    <div class="note note-interview">
+      <div class="note-label">Interviewers ask…</div>
+      <div class="prose small">{{ ex.interview }}</div>
+    </div>
+    {% endif %}
+  </aside>
+</section>
+{% endmacro %}

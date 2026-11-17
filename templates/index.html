@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block body_class %}page-index{% endblock %}
+{% block crumb %}<span class="crumb-here">Workbook</span>{% endblock %}
+{% block main %}
+<header class="hero">
+  <div class="hero-kicker">ML research interview · 12-week plan</div>
+  <h1 class="hero-title">{{ site.title }}</h1>
+  <p class="hero-sub">{{ site.subtitle | replace('*Understanding Deep Learning*', '<em>Understanding Deep Learning</em>') }}</p>
+  <div class="hero-legend">
+    <span><span class="tab-key">1</span> Blank: write it yourself</span>
+    <span><span class="tab-key">2</span> Scaffold: fill the gaps, get a ✓ or ✗</span>
+    <span><span class="tab-key">3</span> Solution: code beside explanation</span>
+  </div>
+  <a class="continue" data-continue hidden href="#">Continue where you left off → <span data-continue-label></span></a>
+</header>
+
+<div class="timeline">
+  {% for part in parts %}
+  <section class="tl-part">
+    <div class="tl-rail">
+      <div class="tl-weeks">Weeks<br><strong>{{ part.weeks }}</strong></div>
+    </div>
+    <div class="tl-body">
+      <h2 class="tl-title"><span>Part {{ part.num }}</span> {{ part.title }}</h2>
+      <div class="cards">
+        {% for c in part.chapters %}
+        {% if c.href %}
+        <a class="card is-ready" href="{{ c.href }}" data-chapter-progress="{{ c.exercise_ids | join(',') }}">
+          <span class="card-num">{{ c.num }}</span>
+          <span class="card-title">{{ c.title }}</span>
+          <span class="card-meta">{{ 'Not in UDL' if c.udl == '—' else 'UDL ' ~ c.udl }} · {{ c.exercise_ids | length }} exercises</span>
+          <span class="card-ring" aria-hidden="true"></span>
+        </a>
+        {% else %}
+        <div class="card is-soon">
+          <span class="card-num">{{ c.num }}</span>
+          <span class="card-title">{{ c.title }}</span>
+          <span class="card-meta">{{ 'Not in UDL' if c.udl == '—' else 'UDL ' ~ c.udl }} · coming soon</span>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+.venv/
+dist/
+.screenshots/
+__pycache__/
+*.egg-info/
+companion/solutions/
+companion/tests/
+tools/codemirror/node_modules/
+# Private: personal brief and your own exercise answers (the build recreates the stubs)
+brief.md
+companion/exercises/

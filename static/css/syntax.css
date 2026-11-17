@@ -1,0 +1,15 @@
+/* Pygments token classes → dopamine syntax roles (see tokens.css). */
+.code .k, .code .kn, .code .kd, .code .kr, .code .ow { color: var(--syn-keyword); }
+.code .kc { color: var(--syn-number); }
+.code .nf, .code .fm { color: var(--syn-func); font-weight: 600; }
+.code .nc, .code .nn { color: var(--syn-entity); }
+.code .nb, .code .bp { color: var(--syn-builtin); }
+.code .nd { color: var(--syn-keyword); }
+.code .n, .code .nv { color: var(--syn-name); }
+.code .s, .code .s1, .code .s2, .code .sa, .code .se, .code .si { color: var(--syn-string); }
+.code .sd { color: var(--syn-comment); font-style: italic; }
+.code .m, .code .mi, .code .mf, .code .mh, .code .mo { color: var(--syn-number); }
+.code .o { color: var(--syn-operator); }
+.code .p { color: var(--syn-punct); }
+.code .c, .code .c1, .code .cm, .code .ch { color: var(--syn-comment); font-style: italic; }
+.code .err { color: var(--error); }
