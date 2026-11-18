@@ -109,6 +109,9 @@ function refreshProgress() {
     if (el.dataset.chapterProgress !== undefined) el.title = `${n}/${ids.length} exercises complete`;
   });
   $$("[data-toc]").forEach((a) => a.classList.toggle("is-done", done(a.dataset.toc)));
+  const { items } = paintChecklistCount();
+  paintChecklistPage(items);
+  paintDashboard(items);
 }
 
 function rememberVisit(exEl) {
@@ -127,6 +130,172 @@ function initIndex() {
   }
 }
 
+/* ── Site data, checklist, dashboard (M3) ─────────────── */
+const WB = (() => {
+  try { return JSON.parse($("#wb-data")?.textContent || "null"); } catch { return null; }
+})();
+const isDone = (id) => !!store.data.ex?.[id]?.done;
+const DAY = 86_400_000;
+const INTERVAL_DAYS = { again: 1, hard: 3, good: 7, easy: 14 };
+
+function checklistStatus() {
+  if (!WB) return [];
+  return WB.checklist.map((item) => {
+    const exs = WB.exercises.filter((e) => e.tags.some((t) => item.tags.includes(t)));
+    const nDone = exs.filter((e) => isDone(e.id)).length;
+    const auto = exs.length > 0 && nDone === exs.length;
+    const manual = !!store.data.checklist?.[item.id];
+    return { id: item.id, exs, nDone, auto, manual, done: auto || manual };
+  });
+}
+
+function setRing(el, frac) {
+  el?.style.setProperty("--p", Math.max(0, Math.min(1, frac)));
+}
+
+function paintChecklistCount() {
+  const items = checklistStatus();
+  const n = items.filter((i) => i.done).length;
+  $$("[data-checklist-count]").forEach((el) => (el.textContent = items.length ? `${n}/${items.length}` : ""));
+  return { items, n };
+}
+
+function initChecklistPage() {
+  const rows = $$("[data-item]");
+  if (!rows.length) return;
+  rows.forEach((row) => {
+    $("[data-cl-toggle]", row).addEventListener("click", () => {
+      store.data.checklist ??= {};
+      const s = checklistStatus().find((i) => i.id === row.dataset.item);
+      if (s.auto) return; // already ticked by its exercises
+      store.data.checklist[row.dataset.item] = !s.manual;
+      store.save();
+      refreshProgress();
+    });
+  });
+}
+
+function paintChecklistPage(items) {
+  const rows = $$("[data-item]");
+  if (!rows.length) return;
+  const byId = Object.fromEntries(items.map((i) => [i.id, i]));
+  rows.forEach((row) => {
+    const s = byId[row.dataset.item];
+    row.classList.toggle("is-done", s.done);
+    row.classList.toggle("is-auto", s.auto);
+    const btn = $("[data-cl-toggle]", row);
+    btn.setAttribute("aria-pressed", s.done);
+    btn.title = s.auto ? "Ticked automatically: all linked exercises are complete" : s.manual ? "Ticked by hand: click to untick" : "Tick by hand";
+    $("[data-cl-state]", row).textContent = s.exs.length ? `${s.nDone}/${s.exs.length}` : "";
+    $$("[data-ex-link]", row).forEach((a) => a.classList.toggle("is-done", isDone(a.dataset.exLink)));
+  });
+  const n = items.filter((i) => i.done).length;
+  const bar = $("[data-checklist-bar]");
+  setRing(bar, n / items.length);
+  $("[data-checklist-n]").textContent = n;
+  $("[data-checklist-total]").textContent = items.length;
+}
+
+function currentWeek() {
+  const start = store.data.startDate;
+  if (!start) return null;
+  const days = Math.floor((Date.now() - new Date(start + "T00:00:00").getTime()) / DAY);
+  return { raw: Math.floor(days / 7) + 1, days };
+}
+
+function dueDerivations() {
+  if (!WB) return [];
+  const now = Date.now();
+  return WB.exercises.filter((e) => e.type === "derive").map((e) => {
+    const r = store.data.ex?.[e.id]?.rating;
+    const due = r ? new Date(r.at).getTime() + INTERVAL_DAYS[r.grade] * DAY : 0;
+    return { ...e, rating: r, due, isDue: due <= now };
+  }).sort((a, b) => a.due - b.due);
+}
+
+function paintDashboard(checklistItems) {
+  const dash = $("[data-dashboard]");
+  if (!dash || !WB) return;
+  const total = WB.exercises.length;
+  const done = WB.exercises.filter((e) => isDone(e.id)).length;
+  $("[data-stat='exercises-n']").textContent = done;
+  $("[data-stat='exercises-text']").textContent = `${done} of ${total}`;
+  setRing($("[data-stat-ring='exercises']"), done / total);
+  const cl = checklistItems.filter((i) => i.done).length;
+  $("[data-stat='checklist-n']").textContent = cl;
+  $("[data-stat='checklist-text']").textContent = `${cl} of ${checklistItems.length}`;
+  setRing($("[data-stat-ring='checklist']"), cl / checklistItems.length);
+  const drills = dueDerivations();
+  const practised = drills.filter((d) => d.rating).length;
+  $("[data-stat='drills-n']").textContent = practised;
+  $("[data-stat='drills-text']").textContent = `${practised} of ${drills.length}`;
+  setRing($("[data-stat-ring='drills']"), drills.length ? practised / drills.length : 0);
+
+  // Derivations due
+  const list = $("[data-due-list]");
+  const due = drills.filter((d) => d.isDue).slice(0, 6);
+  list.replaceChildren(...due.map((d) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<a class="due-item" href="${d.href}"><span class="cl-ex-n"></span><span class="due-title"></span><span class="due-tag"></span></a>`;
+    $(".cl-ex-n", li).textContent = d.number;
+    $(".due-title", li).textContent = d.title;
+    const tag = $(".due-tag", li);
+    tag.textContent = d.rating ? `last: ${d.rating.grade}` : "new";
+    tag.classList.toggle("is-new", !d.rating);
+    return li;
+  }));
+  $("[data-due-empty]").hidden = due.length > 0;
+
+  // This week
+  const wk = currentWeek();
+  $("[data-week-setup]").hidden = !!wk;
+  $("[data-week-body]").hidden = !wk;
+  const pill = $("[data-week-pill]");
+  pill.hidden = !wk;
+  $$(".card-now").forEach((c) => (c.hidden = true));
+  $$(".card").forEach((c) => c.classList.remove("is-now"));
+  if (!wk) return;
+  const week = Math.min(12, Math.max(1, wk.raw));
+  pill.textContent = wk.raw < 1 ? `Starts in ${-wk.days} day${wk.days === -1 ? "" : "s"}` : wk.raw > 12 ? "Plan complete · week 12" : `Week ${week} of 12`;
+  const chapters = WB.chapters.filter((c) => c.weeks.includes(week));
+  $("[data-week-list]").replaceChildren(...chapters.map((c) => {
+    const li = document.createElement("li");
+    const n = c.exercises.filter(isDone).length;
+    li.className = "week-item" + (c.href ? "" : " is-soon");
+    li.innerHTML = c.href
+      ? `<a href="${c.href}"><span class="cl-ex-n">${c.num}</span><span class="wk-title"></span><span class="wk-prog">${n}/${c.exercises.length}</span></a>`
+      : `<span><span class="cl-ex-n">${c.num}</span><span class="wk-title"></span><span class="wk-prog">coming soon</span></span>`;
+    $(".wk-title", li).textContent = c.title;
+    if (c.href && n === c.exercises.length && n > 0) li.classList.add("is-done");
+    return li;
+  }));
+  $$(".card[data-weeks]").forEach((card) => {
+    if (card.dataset.weeks.split(",").map(Number).includes(week)) {
+      card.classList.add("is-now");
+      $(".card-now", card).hidden = false;
+    }
+  });
+}
+
+function initDashboard() {
+  const form = $("[data-start-form]");
+  if (!form) return;
+  const input = $("[data-start-input]");
+  input.value = store.data.startDate || new Date().toISOString().slice(0, 10);
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    store.data.startDate = input.value;
+    store.save();
+    refreshProgress();
+  });
+  $("[data-start-reset]").addEventListener("click", () => {
+    delete store.data.startDate;
+    store.save();
+    refreshProgress();
+    input.focus();
+  });
+}
+
 /* ── Exercise ─────────────────────────────────────────── */
 function initExercise(exEl) {
   const id = exEl.dataset.ex;
@@ -136,7 +305,14 @@ function initExercise(exEl) {
   const panels = $$("[role=tabpanel]", exEl);
 
   // tabs
+  const locked = (n) => exEl.dataset.type === "predict" && !st.predicted && String(n) !== "1";
   function select(n, focus = false) {
+    if (locked(n)) {
+      const fb = $("[data-predict-feedback]", exEl);
+      fb.className = "predict-feedback is-nudge";
+      fb.textContent = "Commit to a prediction first (or skip).";
+      return;
+    }
     tabs.forEach((t) => {
       const on = t.dataset.tab === String(n);
       t.setAttribute("aria-selected", on);
@@ -164,6 +340,7 @@ function initExercise(exEl) {
   });
   if (st.tab) select(st.tab);
 
+  initPredict(exEl, st, tabs);
   initBlanks(exEl, st);
   initHints(exEl);
   initEditor(exEl, st);
@@ -172,6 +349,64 @@ function initExercise(exEl) {
   initRating(exEl, st);
   initSplit(exEl);
   initDone(exEl, st);
+}
+
+function initPredict(exEl, st, tabs) {
+  const form = $("[data-predict]", exEl);
+  if (!form) return;
+  const correct = decode(form.dataset.correct);
+  const radios = $$("input[type=radio]", form);
+  const commit = $("[data-commit]", form);
+  const fb = $("[data-predict-feedback]", form);
+  const letter = (i) => "ABCDEFGH"[i];
+
+  function paint() {
+    const p = st.predicted;
+    tabs.forEach((t) => {
+      const lock = !p && t.dataset.tab !== "1";
+      t.classList.toggle("is-locked", lock);
+      t.setAttribute("aria-disabled", lock);
+    });
+    if (!p) return;
+    radios.forEach((r, i) => {
+      r.disabled = true;
+      r.checked = i === p.choice;
+      const label = r.closest(".choice");
+      label.classList.toggle("is-correct", i === correct);
+      label.classList.toggle("is-wrong", i === p.choice && i !== correct);
+    });
+    commit.disabled = true;
+    commit.textContent = "Prediction committed";
+    $("[data-predict-skip]", form).hidden = true;
+    const status = $('[data-tab-status="1"]', exEl);
+    if (p.choice == null) {
+      fb.className = "predict-feedback";
+      fb.textContent = `Skipped. The answer is ${letter(correct)}. Run the experiment to see why.`;
+    } else if (p.choice === correct) {
+      fb.className = "predict-feedback is-right";
+      fb.textContent = "✓ Right. Now confirm it in the experiment.";
+      status.textContent = "✓";
+    } else {
+      fb.className = "predict-feedback is-wrong";
+      fb.textContent = `✗ Not quite: it's ${letter(correct)}. The experiment shows why.`;
+      status.textContent = "✗";
+    }
+  }
+  radios.forEach((r) => r.addEventListener("change", () => (commit.disabled = false)));
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const chosen = radios.findIndex((r) => r.checked);
+    if (chosen < 0 || st.predicted) return;
+    st.predicted = { choice: chosen, at: new Date().toISOString() };
+    store.save();
+    paint();
+  });
+  $("[data-predict-skip]", form).addEventListener("click", () => {
+    st.predicted = { choice: null, at: new Date().toISOString() };
+    store.save();
+    paint();
+  });
+  paint();
 }
 
 function initBlanks(exEl, st) {
@@ -372,8 +607,10 @@ function initEditor(exEl, st) {
     const passed = res.tests.filter((t) => t.ok).length;
     const total = res.tests.length;
     const allOk = !res.error && total > 0 && passed === total;
-    status.className = "run-status " + (allOk ? "is-pass" : "is-fail");
-    status.textContent = res.error ? "Your code didn't run" : `${passed}/${total} tests passing`;
+    const fine = !res.error && passed === total;
+    const noun = exEl.dataset.type === "predict" ? "claims hold" : "tests passing";
+    status.className = "run-status " + (fine ? "is-pass" : "is-fail");
+    status.textContent = res.error ? "Your code didn't run" : total ? `${passed}/${total} ${noun}` : "Finished";
     results.hidden = false;
     results.replaceChildren();
     if (res.error) results.append(errorRow(res.error));
@@ -555,6 +792,8 @@ function initDone(exEl, st) {
 initChrome();
 renderMath();
 $$(".exercise").forEach(initExercise);
+initChecklistPage();
+initDashboard();
 refreshProgress();
 initIndex();
 document.documentElement.dataset.ready = "1";

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block body_class %}page-index{% endblock %}
-{% block crumb %}<span class="crumb-here">Workbook</span>{% endblock %}
+{% block crumb %}<span class="crumb-here">Dashboard</span>{% endblock %}
 {% block main %}
 <header class="hero">
   <div class="hero-kicker">ML research interview · 12-week plan</div>
@@ -11,8 +11,55 @@
     <span><span class="tab-key">2</span> Scaffold: fill the gaps, get a ✓ or ✗</span>
     <span><span class="tab-key">3</span> Solution: code beside explanation</span>
   </div>
-  <a class="continue" data-continue hidden href="#">Continue where you left off → <span data-continue-label></span></a>
 </header>
+
+<section class="dash" aria-label="Your progress" data-dashboard>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-ring" data-stat-ring="exercises"><span data-stat="exercises-n">0</span></div>
+      <div><div class="stat-label">Exercises complete</div><div class="stat-sub"><span data-stat="exercises-text">0 of 0</span></div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-ring" data-stat-ring="checklist"><span data-stat="checklist-n">0</span></div>
+      <div><div class="stat-label">Checklist items</div><div class="stat-sub"><a href="checklist.html" data-stat="checklist-text">0 of 0</a></div></div>
+    </div>
+    <div class="stat">
+      <div class="stat-ring" data-stat-ring="drills"><span data-stat="drills-n">0</span></div>
+      <div><div class="stat-label">Derivations practised</div><div class="stat-sub"><span data-stat="drills-text">0 of 0</span></div></div>
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <div class="panel-card" data-week-card>
+      <div class="pc-head">
+        <h2 class="pc-title">This week</h2>
+        <span class="week-pill" data-week-pill hidden></span>
+      </div>
+      <div data-week-setup>
+        <p class="pc-text">When did you start the twelve-week plan? Your current week's chapters will appear here.</p>
+        <form class="row" data-start-form>
+          <input type="date" class="date-input" data-start-input aria-label="Start date" required>
+          <button type="submit" class="btn">Set start date</button>
+        </form>
+      </div>
+      <div data-week-body hidden>
+        <ol class="week-list" data-week-list></ol>
+        <button type="button" class="link-btn" data-start-reset>Change start date</button>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <div class="pc-head">
+        <h2 class="pc-title">Derivations due</h2>
+        <span class="muted small">Practise these out loud</span>
+      </div>
+      <ol class="due-list" data-due-list></ol>
+      <p class="pc-text muted small" data-due-empty hidden>All caught up. Ratings space your reviews out: Again → tomorrow, Hard → 3 days, Good → 7, Easy → 14.</p>
+    </div>
+  </div>
+
+  <a class="continue" data-continue hidden href="#">Continue where you left off → <span data-continue-label></span></a>
+</section>
 
 <div class="timeline">
   {% for part in parts %}
@@ -25,17 +72,19 @@
       <div class="cards">
         {% for c in part.chapters %}
         {% if c.href %}
-        <a class="card is-ready" href="{{ c.href }}" data-chapter-progress="{{ c.exercise_ids | join(',') }}">
+        <a class="card is-ready" href="{{ c.href }}" data-chapter-progress="{{ c.exercise_ids | join(',') }}" data-weeks="{{ c.weeks | join(',') }}">
           <span class="card-num">{{ c.num }}</span>
           <span class="card-title">{{ c.title }}</span>
           <span class="card-meta">{{ 'Not in UDL' if c.udl == '—' else 'UDL ' ~ c.udl }} · {{ c.exercise_ids | length }} exercises</span>
           <span class="card-ring" aria-hidden="true"></span>
+          <span class="card-now" hidden>this week</span>
         </a>
         {% else %}
-        <div class="card is-soon">
+        <div class="card is-soon" data-weeks="{{ c.weeks | join(',') }}">
           <span class="card-num">{{ c.num }}</span>
           <span class="card-title">{{ c.title }}</span>
           <span class="card-meta">{{ 'Not in UDL' if c.udl == '—' else 'UDL ' ~ c.udl }} · coming soon</span>
+          <span class="card-now" hidden>this week</span>
         </div>
         {% endif %}
         {% endfor %}

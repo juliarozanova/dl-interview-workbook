@@ -1,4 +1,5 @@
 # Curriculum order. A chapter with `file:` is built; the rest show as "coming soon".
+# `weeks` places each chapter on the 12-week plan (drives the dashboard's "this week").
 title: Interview Practice Workbook
 subtitle: Implementation-first deep learning, paced over twelve weeks. Companion text — Prince, *Understanding Deep Learning*.
 udl_url: https://udlbook.github.io/udlbook/
@@ -8,43 +9,43 @@ parts:
     title: Foundations
     weeks: "1–3"
     chapters:
-      - {num: "01", slug: "01-tensors", title: "Tensors, shapes & broadcasting", udl: "—"}
-      - {num: "02", slug: "02-linear-models", title: "Supervised learning & linear models", udl: "Ch. 2"}
-      - {num: "03", slug: "03-deep-networks", title: "Shallow → deep networks", udl: "Ch. 3–4"}
-      - {num: "04", slug: "04-loss-functions", title: "Loss functions from maximum likelihood", udl: "Ch. 5", file: "part1-foundations/04-loss-functions.md"}
-      - {num: "05", slug: "05-backprop", title: "Backprop & automatic differentiation", udl: "Ch. 7"}
-      - {num: "06", slug: "06-initialisation", title: "Initialisation & gradient flow", udl: "Ch. 7"}
-      - {num: "07", slug: "07-optimisation", title: "Optimisation", udl: "Ch. 6"}
-      - {num: "08", slug: "08-generalisation", title: "Generalisation & regularisation", udl: "Ch. 8–9"}
-      - {num: "09", slug: "09-training-loop", title: "The training loop & debugging", udl: "Ch. 6–9"}
+      - {num: "01", slug: "01-tensors", title: "Tensors, shapes & broadcasting", udl: "—", weeks: [1], file: "part1-foundations/01-tensors.md"}
+      - {num: "02", slug: "02-linear-models", title: "Supervised learning & linear models", udl: "Ch. 2", weeks: [1], file: "part1-foundations/02-linear-models.md"}
+      - {num: "03", slug: "03-deep-networks", title: "Shallow → deep networks", udl: "Ch. 3–4", weeks: [1, 2], file: "part1-foundations/03-deep-networks.md"}
+      - {num: "04", slug: "04-loss-functions", title: "Loss functions from maximum likelihood", udl: "Ch. 5", weeks: [2], file: "part1-foundations/04-loss-functions.md"}
+      - {num: "05", slug: "05-backprop", title: "Backprop & automatic differentiation", udl: "Ch. 7", weeks: [2], file: "part1-foundations/05-backprop.md"}
+      - {num: "06", slug: "06-initialisation", title: "Initialisation & gradient flow", udl: "Ch. 7", weeks: [2, 3], file: "part1-foundations/06-initialisation.md"}
+      - {num: "07", slug: "07-optimisation", title: "Optimisation", udl: "Ch. 6", weeks: [3], file: "part1-foundations/07-optimisation.md"}
+      - {num: "08", slug: "08-generalisation", title: "Generalisation & regularisation", udl: "Ch. 8–9", weeks: [3], file: "part1-foundations/08-generalisation.md"}
+      - {num: "09", slug: "09-training-loop", title: "The training loop & debugging", udl: "Ch. 6–9", weeks: [3], file: "part1-foundations/09-training-loop.md"}
   - num: II
     title: Architectures & representation
     weeks: "4–6"
     chapters:
-      - {num: "10", slug: "10-normalisation", title: "Normalisation & residuals", udl: "Ch. 11"}
-      - {num: "11", slug: "11-cnns", title: "CNNs & inductive bias", udl: "Ch. 10"}
-      - {num: "12", slug: "12-rnns", title: "RNNs, LSTMs, GRUs", udl: "—"}
-      - {num: "13", slug: "13-attention", title: "Attention", udl: "Ch. 12", file: "part2-architectures/13-attention.md"}
-      - {num: "14", slug: "14-transformers", title: "Transformers", udl: "Ch. 12"}
-      - {num: "15", slug: "15-moe", title: "Mixture of experts", udl: "—"}
-      - {num: "16", slug: "16-autoencoders", title: "Embeddings & autoencoders", udl: "Ch. 14"}
+      - {num: "10", slug: "10-normalisation", title: "Normalisation & residuals", udl: "Ch. 11", weeks: [4]}
+      - {num: "11", slug: "11-cnns", title: "CNNs & inductive bias", udl: "Ch. 10", weeks: [4]}
+      - {num: "12", slug: "12-rnns", title: "RNNs, LSTMs, GRUs", udl: "—", weeks: [5]}
+      - {num: "13", slug: "13-attention", title: "Attention", udl: "Ch. 12", weeks: [5], file: "part2-architectures/13-attention.md"}
+      - {num: "14", slug: "14-transformers", title: "Transformers", udl: "Ch. 12", weeks: [5, 6]}
+      - {num: "15", slug: "15-moe", title: "Mixture of experts", udl: "—", weeks: [6]}
+      - {num: "16", slug: "16-autoencoders", title: "Embeddings & autoencoders", udl: "Ch. 14", weeks: [6]}
   - num: III
     title: Generative & advanced
     weeks: "7–9"
     chapters:
-      - {num: "17", slug: "17-vaes", title: "VAEs & the ELBO", udl: "Ch. 17"}
-      - {num: "18", slug: "18-gans", title: "GANs", udl: "Ch. 15"}
-      - {num: "19", slug: "19-diffusion", title: "Diffusion & score matching", udl: "Ch. 18"}
-      - {num: "20", slug: "20-autoregressive", title: "Autoregressive & flow models", udl: "Ch. 16"}
-      - {num: "21", slug: "21-contrastive", title: "Contrastive & self-supervised", udl: "—"}
-      - {num: "22", slug: "22-rl", title: "Reinforcement learning", udl: "Ch. 19"}
-      - {num: "23", slug: "23-scaling", title: "Scaling & training dynamics", udl: "Ch. 20"}
+      - {num: "17", slug: "17-vaes", title: "VAEs & the ELBO", udl: "Ch. 17", weeks: [7]}
+      - {num: "18", slug: "18-gans", title: "GANs", udl: "Ch. 15", weeks: [7]}
+      - {num: "19", slug: "19-diffusion", title: "Diffusion & score matching", udl: "Ch. 18", weeks: [8]}
+      - {num: "20", slug: "20-autoregressive", title: "Autoregressive & flow models", udl: "Ch. 16", weeks: [8]}
+      - {num: "21", slug: "21-contrastive", title: "Contrastive & self-supervised", udl: "—", weeks: [8]}
+      - {num: "22", slug: "22-rl", title: "Reinforcement learning", udl: "Ch. 19", weeks: [9]}
+      - {num: "23", slug: "23-scaling", title: "Scaling & training dynamics", udl: "Ch. 20", weeks: [9]}
   - num: IV
     title: Research methodology & interview
     weeks: "10–12"
     chapters:
-      - {num: "24", slug: "24-evaluation", title: "Evaluation & statistics", udl: "—"}
-      - {num: "25", slug: "25-leakage-shift", title: "Leakage & distribution shift", udl: "—"}
-      - {num: "26", slug: "26-ablations", title: "Ablations & experimental design", udl: "—"}
-      - {num: "27", slug: "27-no-framework", title: "No-framework drills", udl: "—"}
-      - {num: "28", slug: "28-mock-interview", title: "Mock interview kit", udl: "—"}
+      - {num: "24", slug: "24-evaluation", title: "Evaluation & statistics", udl: "—", weeks: [10]}
+      - {num: "25", slug: "25-leakage-shift", title: "Leakage & distribution shift", udl: "—", weeks: [10]}
+      - {num: "26", slug: "26-ablations", title: "Ablations & experimental design", udl: "—", weeks: [11]}
+      - {num: "27", slug: "27-no-framework", title: "No-framework drills", udl: "—", weeks: [11, 12]}
+      - {num: "28", slug: "28-mock-interview", title: "Mock interview kit", udl: "—", weeks: [12]}

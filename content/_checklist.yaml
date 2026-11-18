@@ -1,0 +1,56 @@
+# The interview-prep checklist. An item ticks itself when every built exercise carrying one of
+# its `tags` is complete (and at least one exists). You can also tick items by hand on the page.
+groups:
+  - title: Neural network fundamentals
+    items:
+      - {id: backprop, title: "Backpropagation from first principles", tags: [backprop]}
+      - {id: autodiff, title: "Computational graphs and automatic differentiation", tags: [autodiff]}
+      - {id: vanishing-gradients, title: "Vanishing and exploding gradients", tags: [vanishing-gradients]}
+      - {id: initialisation, title: "Initialisation: Xavier, He, orthogonal", tags: [initialisation]}
+      - {id: normalisation, title: "Batch norm, layer norm, residual connections", tags: [normalisation, residuals]}
+      - {id: bias-variance, title: "Bias–variance trade-off and generalisation", tags: [bias-variance, generalisation]}
+  - title: Optimisation
+    items:
+      - {id: optimisers, title: "SGD, momentum, Adam, AdamW", tags: [optimisers]}
+      - {id: lr-schedules, title: "Learning-rate schedules and warmup", tags: [lr-schedules]}
+      - {id: weight-decay, title: "Weight decay versus L1/L2 regularisation", tags: [weight-decay, regularisation]}
+      - {id: gradient-clipping, title: "Gradient clipping", tags: [gradient-clipping]}
+      - {id: loss-landscape, title: "Loss landscapes, saddle points and curvature", tags: [loss-landscape]}
+  - title: Architectures
+    items:
+      - {id: cnns, title: "CNNs and inductive biases", tags: [cnns]}
+      - {id: rnns, title: "RNNs, LSTMs and GRUs", tags: [rnns]}
+      - {id: attention, title: "Self-attention, cross-attention and multi-head attention", tags: [self-attention, multi-head-attention]}
+      - {id: transformers, title: "Transformer architecture and positional encodings", tags: [transformers]}
+      - {id: transformer-variants, title: "Encoder-only, decoder-only and encoder-decoder models", tags: [transformer-variants]}
+      - {id: moe, title: "Mixture of experts", tags: [moe]}
+  - title: Generative modelling
+    items:
+      - {id: vaes, title: "VAEs and ELBO derivation", tags: [vaes]}
+      - {id: gans, title: "GANs and their training dynamics", tags: [gans]}
+      - {id: diffusion, title: "Diffusion models and score matching", tags: [diffusion]}
+      - {id: autoregressive, title: "Autoregressive modelling", tags: [autoregressive]}
+      - {id: contrastive, title: "Contrastive learning", tags: [contrastive]}
+  - title: Research methodology
+    items:
+      - {id: ablations, title: "Ablation studies", tags: [ablations]}
+      - {id: significance, title: "Statistical significance and confidence intervals", tags: [significance]}
+      - {id: leakage, title: "Data leakage", tags: [leakage]}
+      - {id: distribution-shift, title: "Distribution shift", tags: [distribution-shift]}
+      - {id: experimental-design, title: "Experimental design and evaluation metrics", tags: [experimental-design, metrics]}
+  - title: Implementation fluency
+    items:
+      - {id: shapes, title: "Tensor shapes and broadcasting", tags: [broadcasting, tensor-shapes]}
+      - {id: numerical-stability, title: "Numerical stability", tags: [numerical-stability]}
+      - {id: debugging, title: "Debugging models", tags: [debugging]}
+      - {id: mlp, title: "PyTorch: MLP", tags: [mlp]}
+      - {id: training-loop, title: "PyTorch: training loop", tags: [training-loop]}
+      - {id: optimiser-impl, title: "PyTorch: writing an optimiser", tags: [optimiser-impl]}
+      - {id: custom-losses, title: "PyTorch: custom losses", tags: [custom-losses]}
+  - title: Derivations to drill out loud
+    items:
+      - {id: d-bias-variance, title: "Bias–variance decomposition", tags: [bias-variance-derivation]}
+      - {id: d-softmax-ce, title: "Backprop through softmax + cross-entropy", tags: [softmax-ce-derivation]}
+      - {id: d-elbo, title: "The ELBO", tags: [elbo-derivation]}
+      - {id: d-policy-gradient, title: "The policy gradient theorem", tags: [policy-gradient-derivation]}
+      - {id: d-sqrt-d, title: "Why attention is scaled by √d", tags: [sqrt-d-derivation]}

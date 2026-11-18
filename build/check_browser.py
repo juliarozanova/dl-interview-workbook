@@ -70,8 +70,8 @@ def main() -> int:
         # ── Index ────────────────────────────────────────
         page.goto(base + "index.html")
         page.wait_for_selector("html[data-ready='1']")
-        ok(page.locator(".card.is-ready").count() == 2, "index lists 2 ready chapters")
-        ok(page.locator(".card.is-soon").count() == 26, "index lists 26 coming-soon chapters")
+        ok(page.locator(".card.is-ready").count() == 10, "index lists 10 ready chapters")
+        ok(page.locator(".card.is-soon").count() == 18, "index lists 18 coming-soon chapters")
         page.screenshot(path=OUT / "01-index-light.png", full_page=True)
 
         # ── Chapter render ───────────────────────────────
@@ -297,6 +297,110 @@ def main() -> int:
         page.wait_for_timeout(450)
         ok(not page.evaluate("document.documentElement.classList.contains('nav-collapsed')"), "[ key re-opens the sidebar")
         ok(page.locator(".sidebar").bounding_box()["width"] > 200, "re-opened sidebar has full width")
+        # ── M3: every chapter renders; every in-browser reference passes in Pyodide ──
+        import yaml
+        meta = yaml.safe_load((ROOT / "content" / "_meta.yaml").read_text())
+        built = [c for part in meta["parts"] for c in part["chapters"] if c.get("file")]
+        failures, timings = [], []
+        for c in built:
+            page.goto(base + f"{c['slug']}.html")
+            page.wait_for_selector("html[data-ready='1']")
+            nd = page.locator(".tex[data-display='1']").count()
+            if page.locator(".katex-error").count() or page.locator(".tex[data-display='1'] .katex-display").count() != nd:
+                failures.append(f"{c['slug']}: maths")
+            if page.locator(".tex").count() != page.locator(".tex .katex").count():
+                failures.append(f"{c['slug']}: unrendered maths")
+            for exid in page.eval_on_selector_all(".exercise", "els => els.map(e => e.id)"):
+                ex = page.locator(f"#{exid}")
+                typ, runtime = ex.get_attribute("data-type"), ex.locator(".badge-runtime").inner_text()
+                if "browser" not in runtime or typ == "derive":
+                    continue
+                if typ == "predict":
+                    ex.scroll_into_view_if_needed()
+                    if ex.locator("[data-predict-skip]").is_visible():
+                        ex.locator("[data-predict-skip]").click()
+                    ex.locator("[data-tab='2']").click()
+                else:
+                    mod = exid.replace("-", "_")
+                    page.evaluate("([id, code]) => window.__wb.editors[id].set(code)", [exid, solution(f"ch{int(c['num']):02d}", mod)])
+                t0 = __import__("time").time()
+                status = run_tests(page, ex)
+                timings.append((__import__("time").time() - t0, exid))
+                if not re.match(r"^(\d+)/\1 ", status) and status != "Finished":
+                    failures.append(f"{exid}: {status}")
+        ok(len(built) == 10, f"10 chapters built ({len(built)})")
+        slow = sorted(timings[1:], reverse=True)[:3]  # skip the first run: it includes booting Python
+        ok(slow[0][0] < 8, "no in-browser exercise is near the 20 s runner limit (slowest: "
+           + ", ".join(f"{e} {t:.1f}s" for t, e in slow) + ")")
+        ok(not failures, "every chapter's maths renders, and every browser reference/experiment passes in Pyodide"
+           + (f": {failures}" if failures else ""))
+
+        # ── M3: predict flow ─────────────────────────────
+        page.evaluate("localStorage.removeItem('wb:v1')")
+        page.goto(base + "06-initialisation.html")
+        page.wait_for_selector("html[data-ready='1']")
+        pr = page.locator("#activation-scale-predict")
+        pr.locator("[data-tab='2']").click(force=True)  # aria-disabled: Playwright would wait forever
+        ok(pr.locator("[data-panel='1']").is_visible() and "Commit" in pr.locator("[data-predict-feedback]").inner_text(),
+           "experiment tab is locked until you commit")
+        ok(pr.locator("[data-commit]").is_disabled(), "commit disabled until an option is chosen")
+        pr.locator(".choice").nth(0).click()
+        pr.locator("[data-commit]").click()
+        ok("is-wrong" in pr.locator(".choice").nth(0).get_attribute("class")
+           and "is-correct" in pr.locator(".choice").nth(1).get_attribute("class"), "wrong pick marked, right answer revealed")
+        pr.screenshot(path=OUT / "19-predict-committed.png")
+        pr.locator("[data-tab='2']").click()
+        ok(pr.locator("[data-panel='2']").is_visible(), "commit unlocks the experiment")
+        status = run_tests(page, pr)
+        ok(status == "3/3 claims hold", f"experiment claims hold ({status})")
+        ok("layer 50" in pr.locator(".result-stdout").inner_text(), "experiment stdout is shown")
+        pr.locator("[data-panel='2']").screenshot(path=OUT / "20-predict-experiment.png")
+
+        # ── M3: checklist auto-tick + manual tick ────────
+        page.goto(base + "checklist.html")
+        page.wait_for_selector("html[data-ready='1']")
+        init_item = page.locator("[data-item='initialisation']")
+        ok("is-done" not in (init_item.get_attribute("class") or ""), "checklist item starts unticked")
+        ids = init_item.get_attribute("data-ex").split(",")
+        ok(set(ids) == {"activation-scale-predict", "he-init-derive", "init-schemes", "attention-sqrt-d"},
+           f"'Initialisation' links every exercise tagged with it, across chapters ({ids})")
+        page.evaluate("""ids => { const s = JSON.parse(localStorage.getItem('wb:v1') || '{}'); s.ex ??= {};
+                         ids.forEach(id => (s.ex[id] ??= {blanks: {}}).done = true); localStorage.setItem('wb:v1', JSON.stringify(s)); }""", ids)
+        page.reload()
+        page.wait_for_selector("html[data-ready='1']")
+        ok("is-auto" in init_item.get_attribute("class"), "item ticks itself when all its exercises are complete")
+        rnn = page.locator("[data-item='rnns']")
+        rnn.locator("[data-cl-toggle]").click()
+        ok("is-done" in rnn.get_attribute("class") and "is-auto" not in rnn.get_attribute("class"), "items can be ticked by hand")
+        n_done = page.locator(".cl-item.is-done").count()
+        ok(n_done == 4 and page.locator(".nav-count").inner_text() == f"{n_done}/{page.locator('[data-item]').count()}",
+           f"sidebar count matches ticked items (3 auto via shared tags, RNNs by hand: {n_done})")
+        page.screenshot(path=OUT / "21-checklist.png", full_page=True)
+
+        # ── M3: dashboard ────────────────────────────────
+        page.goto(base + "index.html")
+        page.wait_for_selector("html[data-ready='1']")
+        ok(page.locator("[data-week-setup]").is_visible(), "dashboard asks for a start date first")
+        page.evaluate("""() => { const d = new Date(Date.now() - 15 * 86400000);
+                         document.querySelector('[data-start-input]').value = d.toISOString().slice(0, 10); }""")
+        page.locator("[data-start-form] button").click()
+        ok(page.locator("[data-week-pill]").inner_text() == "Week 3 of 12", f"15 days in is week 3 ({page.locator('[data-week-pill]').inner_text()})")
+        wk = page.locator("[data-week-list]").inner_text()
+        ok(all(t in wk for t in ["Optimisation", "The training loop"]), "week 3 lists its chapters")
+        ok(page.locator(".card.is-now").count() == 4, f"this week's chapter cards are highlighted ({page.locator('.card.is-now').count()})")
+        ok(page.locator("[data-stat='exercises-n']").inner_text() == "4", "exercise stat counts completions")
+        due0 = page.locator(".due-item").count()
+        ok(due0 == 5, f"all 5 derivations are due when new ({due0})")
+        page.screenshot(path=OUT / "22-dashboard.png", full_page=True)
+        page.goto(base + "08-generalisation.html#bias-variance-derive")
+        page.wait_for_selector("html[data-ready='1']")
+        page.locator("#bias-variance-derive [data-tab='3']").click()
+        page.locator("#bias-variance-derive [data-rate='good']").click()
+        page.goto(base + "index.html")
+        page.wait_for_selector("html[data-ready='1']")
+        ok(page.locator(".due-item").count() == due0 - 1 and page.locator("[data-stat='drills-n']").inner_text() == "1",
+           "rating a derivation 'good' schedules it out of today's list")
+
         page.goto(base + CHAPTER)
         page.wait_for_selector("html[data-ready='1']")
         ex1 = page.locator("#softmax-ce-stable")

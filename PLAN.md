@@ -342,6 +342,15 @@ Semantic HTML, `aria-selected` tabs, visible focus rings, colour + icon for ✓/
 > - Regex blank alternatives (`re:`) are case-insensitive and are matched against the *normalised* input (whitespace removed).
 > - An all-green run marks the exercise complete automatically.
 > - **Sidebar:** collapsible on wide screens (button or `[`), remembered in `localStorage` as `wb:nav`; still a drawer on mobile.
+>
+> **Status (2026-11-18): M3 done.** Part I is complete: chapters 01–09 (plus 13), 32 exercises. `make all` gives 32/32 verified, 77 pytest, and 88/88 headless checks.
+> - **New `predict` type:** sections `task`, `choices` (`- [x]`/`- [ ]`), `experiment` (editable and runnable), `explain`, plus optional `tests`, which act as "claims" the experiment must satisfy. The Experiment and Explanation tabs stay locked until the user commits or skips.
+> - **Dashboard (`index.html`):** progress stats, "this week" from a user-set start date (chapter `weeks` now live in `_meta.yaml`), and derivations due. The spacing is again → 1 day, hard → 3, good → 7, easy → 14. The full Drill Deck is still M4.
+> - **Checklist (`checklist.html`):** groups and items come from `content/_checklist.yaml`. An item auto-ticks when every exercise sharing one of its tags is done; it can also be ticked by hand. Exercise data is embedded on every page as JSON (`#wb-data`).
+> - **Verifier additions:** `[La-b]` explain refs must point at real, non-blank solution lines. Regex alternatives must not accept empty input, but no longer need to match the canonical answer. Predict experiments must run, and their claims must hold.
+> - **Browser check additions:** every chapter is rendered, and *every* in-browser reference solution and experiment is run in Pyodide. Anything near the 20 s runner limit is flagged (Pyodide's NumPy has no fast BLAS, so keep experiments small: the slowest is about 4 s).
+> - **Authoring gotchas:** a blank closes at the first `}}`, so LaTeX alternatives ending in `}}` must become regexes. Exercise titles may use `code`: `title_html` is rendered, and `title` is plain text.
+> - **Datasets:** these are still inline and seeded per exercise. `companion/workbook/data.py` (Section 8) hasn't been needed yet; build it when Part II needs MNIST.
 
 1. **M1: Pipeline vertical slice.** `build.py`, directive parser, templates, CSS tokens, tabs, blanks with ✓/✗/hint, KaTeX, progress in localStorage. Content: **chapter 04 only** (softmax-CE implement + ★ softmax-CE derive + one debug exercise). `make verify` passes.
 2. **M2: Runners.** Pyodide runner for the Blank tab; generated companion stubs and tests; `local-torch` flow. Add chapter 13 (attention, MHA, ★ √d), which exercises both runtimes.

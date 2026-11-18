@@ -26,10 +26,10 @@ EX_CLOSE = re.compile(r"^::::\s*$")
 SEC_OPEN = re.compile(r"^:::([a-z][a-z0-9-]*)(\{.*\})?\s*$")
 SEC_CLOSE = re.compile(r"^:::\s*$")
 
-EXERCISE_TYPES = {"implement", "derive", "debug"}
+EXERCISE_TYPES = {"implement", "derive", "debug", "predict"}
 KNOWN_SECTIONS = {
     "prereq", "theory", "task", "starter", "scaffold", "solution", "derivation",
-    "explain", "tests", "hints", "interview",
+    "explain", "tests", "hints", "interview", "choices", "experiment",
 }
 REQUIRED_ATTRS = {"id", "type", "difficulty", "time", "runtime", "udl"}
 
@@ -174,8 +174,16 @@ def validate(ex: Exercise) -> None:
         raise ParseError(f"{ex.source}: unknown type {ex.type!r}")
     if not ex.title:
         raise ParseError(f"{ex.source}: exercise needs a '# Title' line")
-    need = {"task", "scaffold"}
-    need |= {"derivation"} if ex.type == "derive" else {"starter", "solution", "explain", "tests"}
+    if ex.type == "predict":
+        need = {"task", "choices", "experiment", "explain"}
+    elif ex.type == "derive":
+        need = {"task", "scaffold", "derivation"}
+    else:
+        need = {"task", "scaffold", "starter", "solution", "explain", "tests"}
     absent = need - ex.sections.keys()
     if absent:
         raise ParseError(f"{ex.source} ({ex.id}): missing sections {sorted(absent)}")
+    if ex.type == "predict":
+        marks = re.findall(r"^\s*-\s*\[([ xX])\]", ex.get("choices").body, flags=re.M)
+        if len(marks) < 2 or sum(m.lower() == "x" for m in marks) != 1:
+            raise ParseError(f"{ex.source} ({ex.id}): :::choices needs 2+ '- [ ]' options with exactly one '- [x]'")

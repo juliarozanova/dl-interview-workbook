@@ -90,7 +90,18 @@ TAB_LABELS = {
     "implement": ("Blank", "Scaffold", "Solution"),
     "derive": ("Prompt", "Scaffold", "Derivation"),
     "debug": ("Spot the bug", "Scaffold", "Fix"),
+    "predict": ("Predict", "Experiment", "Explanation"),
 }
+
+
+def choices(text: str) -> tuple[list[str], int]:
+    """`- [x] right` / `- [ ] wrong` lines → (inline HTML per option, index of the correct one)."""
+    opts, correct = [], -1
+    for m in re.finditer(r"^\s*-\s*\[([ xX])\]\s*(.+)$", text, flags=re.M):
+        if m.group(1).lower() == "x":
+            correct = len(opts)
+        opts.append(inline(m.group(2).strip()))
+    return opts, correct
 
 RUNTIME_LABELS = {"browser": "NumPy · in browser", "local-torch": "PyTorch · local", "none": "pen & paper"}
 
@@ -100,7 +111,8 @@ def exercise(ex: Exercise, number: str) -> dict:
     vm = {
         "id": ex.id,
         "type": ex.type,
-        "title": ex.title,
+        "title": ex.title.replace("`", ""),  # plain text: tab titles, dashboard, JSON
+        "title_html": inline(ex.title),     # rendered: headings, TOC, checklist
         "number": number,
         "difficulty": int(ex.attrs["difficulty"]),
         "time": ex.attrs["time"],
@@ -115,9 +127,17 @@ def exercise(ex: Exercise, number: str) -> dict:
         "hints": hints(g("hints").body) if g("hints") else [],
         "interview": markdown(g("interview").body) if g("interview") else "",
     }
-    vm["scaffold"], bl = scaffold(ex)
-    vm["scaffold_is_code"] = g("scaffold").is_code
-    vm["n_blanks"] = len(bl)
+    if g("scaffold"):
+        vm["scaffold"], bl = scaffold(ex)
+        vm["scaffold_is_code"] = g("scaffold").is_code
+        vm["n_blanks"] = len(bl)
+    else:
+        vm["n_blanks"] = 0
+    if g("choices"):
+        vm["choices"], correct = choices(g("choices").body)
+        vm["correct"] = B.b64(correct)
+    if g("experiment"):
+        vm["starter_raw"] = g("experiment").body  # the experiment is the editable code in layer 2
     if g("starter"):
         s = g("starter")
         vm["starter_raw"] = s.body
@@ -128,7 +148,7 @@ def exercise(ex: Exercise, number: str) -> dict:
     if g("solution"):
         vm["solution"] = code(g("solution").body, g("solution").attrs.get("lang", "python"), f"{ex.id}-solution")
     if g("explain"):
-        vm["explain"] = explain(g("explain").body)
+        vm["explain"] = markdown(g("explain").body) if ex.type == "predict" else explain(g("explain").body)
     if g("derivation"):
         steps = re.split(r"^---step---\s*$", g("derivation").body, flags=re.M)
         vm["steps"] = [markdown(s.strip()) for s in steps if s.strip()]

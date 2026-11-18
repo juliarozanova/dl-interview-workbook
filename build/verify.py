@@ -10,6 +10,8 @@ accept the canonical answer, and each hint exists.
 
 from __future__ import annotations
 
+import contextlib
+import io
 import re
 import sys
 import traceback
@@ -23,17 +25,18 @@ from parse import parse_chapter  # noqa: E402
 
 def run(code: str, tests: str) -> tuple[bool, str]:
     ns: dict = {"__name__": "__exercise__"}
-    try:
-        exec(compile(code, "<impl>", "exec"), ns)
-        exec(compile(tests, "<tests>", "exec"), ns)
-    except Exception:
-        return False, traceback.format_exc(limit=1)
-    for name, fn in list(ns.items()):
-        if name.startswith("test_") and callable(fn):
-            try:
-                fn()
-            except Exception as e:  # noqa: BLE001
-                return False, f"{name}: {type(e).__name__}: {e}"
+    with contextlib.redirect_stdout(io.StringIO()):  # experiments print; keep the report clean
+        try:
+            exec(compile(code, "<impl>", "exec"), ns)
+            exec(compile(tests, "<tests>", "exec"), ns)
+        except Exception:
+            return False, traceback.format_exc(limit=1)
+        for name, fn in list(ns.items()):
+            if name.startswith("test_") and callable(fn):
+                try:
+                    fn()
+                except Exception as e:  # noqa: BLE001
+                    return False, f"{name}: {type(e).__name__}: {e}"
     return True, ""
 
 
@@ -54,14 +57,38 @@ def check_blanks(ex) -> list[str]:
                 except re.error as e:
                     errs.append(f"blank {b.index}: bad regex {a!r}: {e}")
                     continue
-                if not rx.search(B.normalise(b.canonical)):
-                    errs.append(f"blank {b.index}: regex {a!r} rejects canonical {b.canonical!r}")
+                if rx.search(""):
+                    errs.append(f"blank {b.index}: regex {a!r} accepts an empty answer")
             elif not B.normalise(a):
                 errs.append(f"blank {b.index}: empty answer")
     return errs
 
 
+def check_line_refs(ex) -> list[str]:
+    """`[La-b]` notes in :::explain must point at real, non-blank lines of the solution code."""
+    sol, expl = ex.get("solution"), ex.get("explain")
+    if not (sol and sol.is_code and expl):
+        return []
+    lines = sol.body.split("\n")
+    errs = []
+    for m in re.finditer(r"^\[L(\d+)(?:[-–](\d+))?\]", expl.body, flags=re.M):
+        a, b = int(m.group(1)), int(m.group(2) or m.group(1))
+        if not 1 <= a <= b <= len(lines):
+            errs.append(f"explain ref [L{a}-{b}] is outside the solution (1–{len(lines)})")
+        elif not lines[a - 1].strip() or not lines[b - 1].strip():
+            errs.append(f"explain ref [L{a}-{b}] starts or ends on a blank line: off by one?")
+    return errs
+
+
 def check_exercise(ex) -> list[str]:
+    return check_line_refs(ex) + _check_exercise(ex)
+
+
+def _check_exercise(ex) -> list[str]:
+    if ex.type == "predict":  # the experiment must run, and the claims in its tests must hold
+        tests = ex.get("tests").body if ex.get("tests") else ""
+        ok, msg = run(ex.get("experiment").body, tests)
+        return [] if ok else [f"experiment fails: {msg}"]
     errs = check_blanks(ex)
     tests = ex.get("tests")
     if not tests:
