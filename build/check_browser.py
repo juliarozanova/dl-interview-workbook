@@ -70,8 +70,8 @@ def main() -> int:
         # ── Index ────────────────────────────────────────
         page.goto(base + "index.html")
         page.wait_for_selector("html[data-ready='1']")
-        ok(page.locator(".card.is-ready").count() == 10, "index lists 10 ready chapters")
-        ok(page.locator(".card.is-soon").count() == 18, "index lists 18 coming-soon chapters")
+        ok(page.locator(".card.is-ready").count() == 28, "index lists all 28 chapters as ready")
+        ok(page.locator(".card.is-soon").count() == 0, "no coming-soon chapters left")
         page.screenshot(path=OUT / "01-index-light.png", full_page=True)
 
         # ── Chapter render ───────────────────────────────
@@ -328,7 +328,7 @@ def main() -> int:
                 timings.append((__import__("time").time() - t0, exid))
                 if not re.match(r"^(\d+)/\1 ", status) and status != "Finished":
                     failures.append(f"{exid}: {status}")
-        ok(len(built) == 10, f"10 chapters built ({len(built)})")
+        ok(len(built) == 28, f"28 chapters built ({len(built)})")
         slow = sorted(timings[1:], reverse=True)[:3]  # skip the first run: it includes booting Python
         ok(slow[0][0] < 8, "no in-browser exercise is near the 20 s runner limit (slowest: "
            + ", ".join(f"{e} {t:.1f}s" for t, e in slow) + ")")
@@ -373,8 +373,8 @@ def main() -> int:
         rnn.locator("[data-cl-toggle]").click()
         ok("is-done" in rnn.get_attribute("class") and "is-auto" not in rnn.get_attribute("class"), "items can be ticked by hand")
         n_done = page.locator(".cl-item.is-done").count()
-        ok(n_done == 4 and page.locator(".nav-count").inner_text() == f"{n_done}/{page.locator('[data-item]').count()}",
-           f"sidebar count matches ticked items (3 auto via shared tags, RNNs by hand: {n_done})")
+        ok(n_done == 3 and page.locator("[data-checklist-count]").inner_text() == f"{n_done}/{page.locator('[data-item]').count()}",
+           f"sidebar count matches ticked items (initialisation + √d drill auto, RNNs by hand; vanishing gradients now also needs Part II: {n_done})")
         page.screenshot(path=OUT / "21-checklist.png", full_page=True)
 
         # ── M3: dashboard ────────────────────────────────
@@ -389,8 +389,9 @@ def main() -> int:
         ok(all(t in wk for t in ["Optimisation", "The training loop"]), "week 3 lists its chapters")
         ok(page.locator(".card.is-now").count() == 4, f"this week's chapter cards are highlighted ({page.locator('.card.is-now').count()})")
         ok(page.locator("[data-stat='exercises-n']").inner_text() == "4", "exercise stat counts completions")
+        n_derive = page.evaluate("JSON.parse(document.getElementById('wb-data').textContent).exercises.filter(e => e.type === 'derive').length")
         due0 = page.locator(".due-item").count()
-        ok(due0 == 5, f"all 5 derivations are due when new ({due0})")
+        ok(due0 == min(6, n_derive), f"new derivations fill the due list (shows {due0} of {n_derive})")
         page.screenshot(path=OUT / "22-dashboard.png", full_page=True)
         page.goto(base + "08-generalisation.html#bias-variance-derive")
         page.wait_for_selector("html[data-ready='1']")
@@ -398,8 +399,114 @@ def main() -> int:
         page.locator("#bias-variance-derive [data-rate='good']").click()
         page.goto(base + "index.html")
         page.wait_for_selector("html[data-ready='1']")
-        ok(page.locator(".due-item").count() == due0 - 1 and page.locator("[data-stat='drills-n']").inner_text() == "1",
+        ok("bias–variance" not in page.locator("[data-due-list]").inner_text().lower() and page.locator("[data-stat='drills-n']").inner_text() == "1",
            "rating a derivation 'good' schedules it out of today's list")
+
+        # ── M4: drill deck ───────────────────────────────
+        page.goto(base + "drills.html")
+        page.wait_for_selector("html[data-ready='1']")
+        n_cards = page.locator("[data-card]").count()
+        ok(n_cards > 150, f"deck has every derivation and interview question ({n_cards} cards)")
+        ok(page.locator("[data-card]:not([hidden])").count() == 1, "exactly one card is shown at a time")
+        page.locator("[data-filter='star']").click()
+        first = page.locator("[data-card]:not([hidden])")
+        ok(first.get_attribute("data-star") == "1", "★ filter shows a priority derivation")
+        ok(first.get_attribute("data-card") != "bias-variance-derive", "already-rated derivation isn't due again today")
+        n_star = page.locator("[data-card][data-star='1']").count()
+        ok(n_star == 5 and page.locator("[data-deck-total]").inner_text() == "5", f"all five ★ priority derivations are in the deck ({n_star})")
+        ok(first.locator("[data-answer]").is_hidden(), "answer starts hidden")
+        page.keyboard.press("Space")
+        ok(first.locator("[data-answer]").is_visible() and first.locator(".dk-step").count() >= 3, "Space reveals the step-by-step derivation")
+        ok(first.locator(".tex .katex").count() > 0, "maths in the revealed answer is rendered")
+        page.screenshot(path=OUT / "23-deck-flipped.png", full_page=True)
+        rated_id = first.get_attribute("data-card")
+        page.keyboard.press("3")
+        ok(page.locator("[data-card]:not([hidden])").get_attribute("data-card") != rated_id, "grading moves on to the next card")
+        graded = 1
+        while page.locator("[data-reveal]").is_visible() and graded < 10:
+            page.keyboard.press("Space")
+            page.keyboard.press("4")
+            graded += 1
+        ok(graded == n_star - 1, f"graded every remaining ★ card ({graded})")
+        ok(page.locator("[data-empty]").is_visible() and "days" in page.locator("[data-empty-next]").inner_text(),
+           "after the last ★ card, the deck says when the next one is due")
+        page.locator("[data-filter='interview']").click()
+        card = page.locator("[data-card]:not([hidden])")
+        ok(card.get_attribute("data-kind") == "interview", "interview filter shows question cards")
+        page.locator("[data-reveal]").click()
+        page.locator("[data-grade='again']").click()
+        stored = page.evaluate("Object.keys(JSON.parse(localStorage.getItem('wb:v1')).cards || {}).length")
+        ok(stored == 1, "interview-card ratings are stored separately from exercises")
+        page.goto(base + "index.html")
+        page.wait_for_selector("html[data-ready='1']")
+        ok(page.locator("[data-stat='drills-n']").inner_text() == str(1 + graded), "derivations rated in the deck count on the dashboard")
+        ok(page.locator("[data-deck-count]").inner_text() == f"{n_derive - 1 - graded} due", f"sidebar shows derivations still due ({page.locator('[data-deck-count]').inner_text()})")
+
+        # ── M6: design exercises ─────────────────────────
+        page.goto(base + "26-ablations.html")
+        page.wait_for_selector("html[data-ready='1']")
+        de = page.locator("#ablation-design")
+        de.locator("[data-notes]").fill("Reproduce the baseline; 2x2 ablation; seeds.")
+        de.locator("[data-tab='2']").click()
+        boxes = de.locator(".rubric-item")
+        n_rub = boxes.count()
+        boxes.nth(0).click()
+        boxes.nth(1).click()
+        ok(de.locator("[data-rubric-n]").inner_text() == "2" and de.locator("[data-tab-status='2']").inner_text() == f"2/{n_rub}",
+           f"rubric ticks are counted ({n_rub} items)")
+        de.screenshot(path=OUT / "24-design-rubric.png")
+        page.wait_for_timeout(400)
+        page.reload()
+        page.wait_for_selector("html[data-ready='1']")
+        ok(de.locator("[data-rubric-n]").inner_text() == "2" and "2x2" in de.locator("[data-notes]").input_value(),
+           "rubric ticks and notes persist across reload")
+        de.locator("[data-tab='3']").click()
+        ok("baseline" in de.locator("[data-panel='3']").inner_text().lower(), "model answer is shown on the third layer")
+
+        # ── M6: interview mode ───────────────────────────
+        page.goto(base + "13-attention.html")
+        page.wait_for_selector("html[data-ready='1']")
+        sd = page.locator("#sdpa-numpy")
+        ok(sd.locator("[data-iv-timer]").is_hidden() and page.locator(".iv-banner").is_hidden(), "interview clock and banner hidden normally")
+        page.locator("[data-interview-toggle]").click()
+        ok(page.evaluate("document.documentElement.classList.contains('interview-mode')"), "interview mode switches on")
+        ok(sd.locator("[data-tab='2']").is_hidden() and sd.locator("[data-tab='3']").is_hidden(), "scaffold and solution tabs are hidden")
+        ok(sd.locator(".prereq").is_hidden() and sd.locator("[data-hints]").is_hidden(), "prerequisites and hints are hidden")
+        ok(sd.locator("[data-panel='1']").is_visible() and page.locator(".iv-banner").is_visible(), "the Blank layer and the banner are visible")
+        sd.locator("[data-iv-timer]").click()
+        page.wait_for_timeout(1300)
+        ok(sd.locator("[data-iv-face]").inner_text() != "20:00", f"the exercise clock counts down ({sd.locator('[data-iv-face]').inner_text()})")
+        page.evaluate("window.scrollTo(0, 0)")
+        page.screenshot(path=OUT / "25-interview-mode.png")
+        page.reload()
+        page.wait_for_selector("html[data-ready='1']")
+        ok(page.evaluate("document.documentElement.classList.contains('interview-mode')"), "interview mode persists across pages and reloads")
+        page.locator("[data-interview-toggle]").click()
+        ok(sd.locator("[data-tab='3']").is_visible(), "switching it off restores the solution tab")
+
+        # ── M6: cheat sheet ──────────────────────────────
+        page.goto(base + "cheatsheet.html")
+        page.wait_for_selector("html[data-ready='1']")
+        ok(page.locator(".sheet-sigs dt").count() >= 20 and page.locator(".sheet-table table").count() >= 3,
+           f"cheat sheet collects signatures and shape tables ({page.locator('.sheet-sigs dt').count()} signatures)")
+        ok(page.locator(".sheet-ideas li").count() >= 10, "cheat sheet lists numerical-stability lessons")
+        page.screenshot(path=OUT / "26-cheatsheet.png", full_page=True)
+
+        # ── M6: print stylesheet ─────────────────────────
+        page.goto(base + CHAPTER)
+        page.wait_for_selector("html[data-ready='1']")
+        page.emulate_media(media="print")
+        hidden = page.evaluate("""() => ['.sidebar', '.topbar', '.tabs', '[data-panel="3"]', '.ex-foot']
+            .every(sel => [...document.querySelectorAll(sel)].every(e => getComputedStyle(e).display === 'none'))""")
+        ok(hidden, "print hides navigation, tabs, solutions and buttons")
+        ok(page.locator("#softmax-ce-stable [data-panel='1']").evaluate("e => getComputedStyle(e).display") == "block",
+           "print shows the Blank layer of every exercise")
+        page.evaluate("window.dispatchEvent(new Event('beforeprint'))")
+        ok(page.locator("details.prereq").evaluate_all("ds => ds.every(d => d.open)"), "printing opens every prerequisite box")
+        page.evaluate("window.dispatchEvent(new Event('afterprint'))")
+        ok(page.locator("details.prereq").evaluate_all("ds => ds.every(d => !d.open)"), "and closes them again afterwards")
+        page.pdf(path=str(OUT / "27-print-ch04.pdf"))
+        page.emulate_media(media="screen")
 
         page.goto(base + CHAPTER)
         page.wait_for_selector("html[data-ready='1']")

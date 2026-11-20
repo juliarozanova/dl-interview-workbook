@@ -3,6 +3,7 @@
 {% block body_class %}page-chapter{% endblock %}
 {% block crumb %}<a href="index.html">Workbook</a> <span aria-hidden="true">/</span> Part {{ ch.part.num }} <span aria-hidden="true">/</span> <span class="crumb-here">{{ ch.num }} {{ ch.title }}</span>{% endblock %}
 {% block main %}
+<div class="iv-banner" role="note"><strong>Interview mode.</strong> Scaffolds, solutions, hints and prerequisites are hidden. For each exercise, start the clock in its header, <em>say your approach out loud</em>, then work it. Switch the mode off (top right) to check yourself.</div>
 <header class="chapter-head">
   <div class="chapter-kicker">Part {{ ch.part.num }} · {{ ch.part.title }} · Week {{ ch.weeks | join('–') }}</div>
   <h1 class="chapter-title"><span class="chapter-num">{{ ch.num }}</span>{{ ch.title }}</h1>

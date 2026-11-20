@@ -85,6 +85,8 @@ def check_exercise(ex) -> list[str]:
 
 
 def _check_exercise(ex) -> list[str]:
+    if ex.type == "design":  # open-ended: structure is checked at parse time
+        return []
     if ex.type == "predict":  # the experiment must run, and the claims in its tests must hold
         tests = ex.get("tests").body if ex.get("tests") else ""
         ok, msg = run(ex.get("experiment").body, tests)

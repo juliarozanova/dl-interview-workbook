@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -16,7 +18,8 @@ import render  # noqa: E402
 from parse import parse_chapter  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-CONTENT, DIST = ROOT / "content", ROOT / "dist"
+CONTENT = ROOT / "content"
+DIST = Path(os.environ["WB_DIST"]).resolve() if os.environ.get("WB_DIST") else ROOT / "dist"  # override for parallel builds
 
 
 def load_curriculum():
@@ -39,6 +42,56 @@ def load_checklist(manifest: list[dict]) -> list[dict]:
     return groups
 
 
+DRILL_TAGS = {"bias-variance-derivation", "softmax-ce-derivation", "elbo-derivation",
+              "policy-gradient-derivation", "sqrt-d-derivation"}  # the five priority derivations (★)
+LI = re.compile(r"<li>(.*?)</li>", re.S)
+ANSWER = re.compile(r"^(.*?)\s*<em>\((.*)\)</em>\s*$", re.S)
+
+
+def drill_cards(vm: dict, ch: dict) -> list[dict]:
+    """Flashcards from one exercise: the derivation itself, plus each 'Interviewers ask' bullet."""
+    base = {"exercise": vm["id"], "chapter": ch["num"], "title": vm["title_html"], "number": vm["number"],
+            "href": f"{ch['href']}#{vm['id']}"}
+    cards = []
+    if vm["type"] == "derive":
+        cards.append({**base, "id": vm["id"], "kind": "derivation", "q": vm["task"],
+                      "a": "".join(f'<div class="dk-step"><span class="dk-step-n">{i}</span><div class="prose">{s}</div></div>'
+                                   for i, s in enumerate(vm["steps"], 1)),
+                      "star": bool(DRILL_TAGS & set(vm["tags"]))})
+    for i, li in enumerate(LI.findall(vm.get("interview", "")), 1):
+        m = ANSWER.match(li.strip())
+        q, a = (m.group(1), m.group(2)) if m else (li.strip(), "")
+        cards.append({**base, "id": f"{vm['id']}#q{i}", "kind": "interview", "q": q, "a": a, "star": False})
+    return cards
+
+
+TABLE = re.compile(r"<table>.*?</table>", re.S)
+STRONG = re.compile(r"<strong>(.*?)</strong>", re.S)
+SIG = re.compile(r'def (\w+)\(([^)]*)\):\s*\n\s+"""(.+?)"""', re.S)
+
+
+def cheatsheet_entries(vm: dict, ch: dict) -> dict:
+    """Shape-contract tables from task sections, and key ideas (bold lead-ins) from explanations."""
+    base = {"title": vm["title_html"], "number": vm["number"], "href": f"{ch['href']}#{vm['id']}"}
+    out = {}
+    for t in TABLE.findall(vm["task"]):
+        if re.search(r"Shape|Inputs|Argument|Output", t.split("</thead>")[0]):
+            out["shapes"] = {**base, "table": t}
+            break
+    sigs = []
+    for name, args, doc in SIG.findall(vm.get("starter_raw", "")):
+        doc = re.sub(r"\s+", " ", doc).strip()
+        if "(" in doc and ("->" in doc or ":" in doc):
+            sigs.append({"sig": f"{name}({args})", "doc": doc})
+    if sigs:
+        out["signatures"] = {**base, "sigs": sigs}
+    if "numerical-stability" in vm["tags"] and vm.get("explain"):
+        ideas = [re.sub(r"\s+", " ", x).strip().rstrip(".") for x in STRONG.findall(vm["explain"])]
+        if ideas:
+            out["stability"] = {**base, "ideas": ideas}
+    return out
+
+
 def main() -> int:
     meta, chapters = load_curriculum()
     env = Environment(loader=FileSystemLoader(ROOT / "templates"), undefined=StrictUndefined,
@@ -49,6 +102,8 @@ def main() -> int:
     shutil.copytree(ROOT / "static", DIST / "static")
 
     manifest: list[dict] = []
+    cards: list[dict] = []
+    sheet: dict[str, list] = {"shapes": [], "signatures": [], "stability": []}
     for ch in chapters:
         if not ch.get("file"):
             continue
@@ -62,6 +117,9 @@ def main() -> int:
             vm = render.exercise(item, f"{int(ch['num'])}.{n}")
             vm["local"] = companion.write(ch["num"], item, f"content/{ch['file']}")
             blocks.append({"kind": "exercise", "ex": vm})
+            cards.extend(drill_cards(vm, ch))
+            for k, v in cheatsheet_entries(vm, ch).items():
+                sheet[k].append(v)
             manifest.append({"id": vm["id"], "title": vm["title"], "titleHtml": vm["title_html"], "type": vm["type"], "number": vm["number"],
                              "chapter": ch["num"], "chapterTitle": ch["title"], "tags": vm["tags"],
                              "href": f"{ch['href']}#{vm['id']}"})
@@ -93,6 +151,15 @@ def main() -> int:
         **common, ch=None, page_title=meta["title"], page="home"))
     (DIST / "checklist.html").write_text(env.get_template("checklist.html").render(
         **common, ch=None, groups=checklist, page_title="Checklist", page="checklist"))
+    cards.sort(key=lambda c: (not c["star"], c["kind"] != "derivation", c["chapter"]))
+    (DIST / "cheatsheet.html").write_text(env.get_template("cheatsheet.html").render(
+        **common, ch=None, sheet=sheet, page_title="Cheat sheet", page="cheatsheet"))
+    print(f"  built cheatsheet.html  ({len(sheet['shapes'])} shape tables, {sum(len(e['sigs']) for e in sheet['signatures'])} signatures, {len(sheet['stability'])} stability lessons)")
+    (DIST / "drills.html").write_text(env.get_template("drills.html").render(
+        **common, ch=None, cards=cards, page_title="Drill deck", page="drills"))
+    n_ans = sum(1 for c in cards if c["kind"] == "interview" and c["a"])
+    print(f"  built drills.html  ({len(cards)} cards: {sum(c['kind'] == 'derivation' for c in cards)} derivations, "
+          f"{len(cards) - sum(c['kind'] == 'derivation' for c in cards)} interview questions, {n_ans} with answers)")
     print(f"  built index.html, checklist.html  ({len(manifest)} exercises in total)")
     return 0
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import re
+from pathlib import Path
 
 from markdown_it import MarkdownIt
 from mdit_py_plugins.dollarmath import dollarmath_plugin
@@ -30,8 +31,32 @@ PROSE_SENTINEL = "XBLANKX{i}X"
 CODE_SENTINEL = "__BLANK_{i}__"
 
 
+FIGURES = Path(__file__).resolve().parent.parent / "content" / "figures"
+FIGURE_LINE = re.compile(r'^@figure\(([\w./-]+\.svg)\)(?:[ \t]+"(.*)")?[ \t]*$', re.M)
+
+
+def _figure(m: re.Match) -> str:
+    """`@figure(name.svg) "caption"` on its own line → inline SVG (so it can use the theme's CSS variables)."""
+    path = FIGURES / m.group(1)
+    if not path.exists():
+        raise FileNotFoundError(f"@figure: {path} not found")
+    svg = path.read_text().strip()
+    cap = f"<figcaption>{inline(m.group(2))}</figcaption>" if m.group(2) else ""
+    name = path.stem
+    return f'<figure class="fig" data-fig="{name}"><div class="fig-art">{svg}</div>{cap}</figure>'
+
+
 def markdown(text: str) -> str:
-    return md.render(text)
+    figs: list[str] = []
+
+    def stash(m):
+        figs.append(_figure(m))
+        return f"\n\nXFIGUREX{len(figs) - 1}X\n\n"
+
+    out = md.render(FIGURE_LINE.sub(stash, text))
+    for i, f in enumerate(figs):
+        out = out.replace(f"<p>XFIGUREX{i}X</p>", f)
+    return out
 
 
 def inline(text: str) -> str:
@@ -91,7 +116,12 @@ TAB_LABELS = {
     "derive": ("Prompt", "Scaffold", "Derivation"),
     "debug": ("Spot the bug", "Scaffold", "Fix"),
     "predict": ("Predict", "Experiment", "Explanation"),
+    "design": ("Prompt", "Checklist", "Model answer"),
 }
+
+
+def rubric(text: str) -> list[str]:
+    return [inline(m.group(1).strip()) for m in re.finditer(r"^\s*-\s+(.+)$", text, flags=re.M)]
 
 
 def choices(text: str) -> tuple[list[str], int]:
@@ -103,7 +133,7 @@ def choices(text: str) -> tuple[list[str], int]:
         opts.append(inline(m.group(2).strip()))
     return opts, correct
 
-RUNTIME_LABELS = {"browser": "NumPy · in browser", "local-torch": "PyTorch · local", "none": "pen & paper"}
+RUNTIME_LABELS = {"browser": "NumPy · in browser", "local-torch": "PyTorch · local", "none": "out loud · whiteboard"}
 
 
 def exercise(ex: Exercise, number: str) -> dict:
@@ -136,6 +166,9 @@ def exercise(ex: Exercise, number: str) -> dict:
     if g("choices"):
         vm["choices"], correct = choices(g("choices").body)
         vm["correct"] = B.b64(correct)
+    if g("rubric"):
+        vm["rubric"] = rubric(g("rubric").body)
+        vm["answer"] = markdown(g("answer").body)
     if g("experiment"):
         vm["starter_raw"] = g("experiment").body  # the experiment is the editable code in layer 2
     if g("starter"):

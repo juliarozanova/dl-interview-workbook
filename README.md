@@ -10,11 +10,13 @@ Every exercise has three layers:
 2. **Scaffold:** a partly worked solution with inline blanks. Each blank gives an instant ✓/✗, and a wrong answer gets a hint about the missing idea.
 3. **Solution:** the reference code beside a line-linked explanation.
 
-Derivation exercises (e.g. backprop through softmax + cross-entropy, bias–variance, why attention is scaled by √d) reveal one step at a time, for practising out loud. **Predict** exercises make you commit to an answer before you run the experiment.
+Derivation exercises (e.g. backprop through softmax + cross-entropy, bias–variance, the ELBO, the policy gradient, why attention is scaled by √d) reveal one step at a time, for practising out loud. **Predict** exercises make you commit to an answer before you run the experiment. **Design** exercises (ablations, metrics, paper critique, research proposals) come with a self-assessment rubric and a model answer.
 
 The **dashboard** shows this week's chapters on the 12-week plan, plus the derivations due for practice. The **checklist** ticks interview topics off as you complete the linked exercises. Progress is stored in your browser's `localStorage`.
 
-**Status:** Part I (Foundations, chapters 01–09) and Chapter 13 (Attention) are complete: 32 exercises.
+The **drill deck** turns every derivation and interview question into spaced-repetition flashcards. Animated diagrams explain broadcasting.
+
+**Status:** complete: 28 chapters and 87 exercises across foundations, architectures, generative & advanced models, and research methodology & interview practice. Also included: **interview mode** (hides scaffolds and solutions, adds a clock), a **cheat sheet** of every shape contract and stability trick, and printable Blank-layer pages. `companion/workbook/data.py` provides MNIST and Colored MNIST for local experiments.
 
 ## Working locally
 

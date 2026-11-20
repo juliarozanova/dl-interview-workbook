@@ -110,6 +110,7 @@ function refreshProgress() {
   });
   $$("[data-toc]").forEach((a) => a.classList.toggle("is-done", done(a.dataset.toc)));
   const { items } = paintChecklistCount();
+  paintDeckCount();
   paintChecklistPage(items);
   paintDashboard(items);
 }
@@ -151,6 +152,12 @@ function checklistStatus() {
 
 function setRing(el, frac) {
   el?.style.setProperty("--p", Math.max(0, Math.min(1, frac)));
+}
+
+function paintDeckCount() {
+  // Derivations due, the same number everywhere (interview-question cards are counted on the deck page itself).
+  const n = WB ? dueDerivations().filter((d) => d.isDue).length : 0;
+  $$("[data-deck-count]").forEach((el) => (el.textContent = n ? `${n} due` : ""));
 }
 
 function paintChecklistCount() {
@@ -277,6 +284,108 @@ function paintDashboard(checklistItems) {
   });
 }
 
+/* ── Drill deck (M4) ──────────────────────────────────── */
+// Derivation cards share their rating with the exercise page (store.data.ex[id].rating);
+// interview-question cards keep theirs in store.data.cards[cardId].
+function cardRating(card) {
+  return card.dataset.kind === "derivation"
+    ? store.data.ex?.[card.dataset.card]?.rating
+    : store.data.cards?.[card.dataset.card];
+}
+
+function cardDue(card) {
+  const r = cardRating(card);
+  return r ? new Date(r.at).getTime() + INTERVAL_DAYS[r.grade] * DAY : 0;
+}
+
+function initDeck() {
+  const deck = $("[data-deck]");
+  if (!deck) return;
+  const cards = $$("[data-card]", deck);
+  const reveal = $("[data-reveal]", deck);
+  const grades = $("[data-grades]", deck);
+  const empty = $("[data-empty]", deck);
+  let filter = "all", current = null, skipped = new Set();
+
+  const inView = (c) => filter === "all" || (filter === "star" ? c.dataset.star === "1" : c.dataset.kind === filter);
+  const fmtDays = (ms) => {
+    const d = Math.ceil(ms / DAY);
+    return d <= 1 ? "tomorrow" : `in ${d} days`;
+  };
+
+  function queue() {
+    const now = Date.now();
+    // Built order is ★ first, then derivations, then by chapter; stable sort keeps it within equal due times.
+    return cards.filter((c) => inView(c) && cardDue(c) <= now && !skipped.has(c))
+                .sort((a, b) => cardDue(a) - cardDue(b));
+  }
+
+  function stats() {
+    const now = Date.now(), view = cards.filter(inView);
+    $("[data-deck-due]", deck).textContent = view.filter((c) => cardRating(c) && cardDue(c) <= now).length;
+    $("[data-deck-new]", deck).textContent = view.filter((c) => !cardRating(c)).length;
+    $("[data-deck-total]", deck).textContent = view.length;
+  }
+
+  function show() {
+    cards.forEach((c) => (c.hidden = true));
+    stats();
+    const q = queue();
+    current = q[0] || null;
+    reveal.hidden = !current;
+    grades.hidden = true;
+    $("[data-skip]", deck).hidden = !current || q.length < 2;
+    empty.hidden = !!current;
+    if (!current) {
+      const upcoming = cards.filter(inView).map(cardDue).filter((t) => t > Date.now()).sort((a, b) => a - b)[0];
+      $("[data-empty-next]", empty).textContent = upcoming ? `Next card due ${fmtDays(upcoming - Date.now())}.` : "Nothing in this view yet.";
+      return;
+    }
+    current.hidden = false;
+    $("[data-answer]", current).hidden = true;
+    const r = cardRating(current);
+    $("[data-due-label]", current).textContent = r ? `last: ${r.grade}` : "new";
+    current.classList.remove("is-flipped");
+  }
+
+  function flip() {
+    if (!current || !grades.hidden) return;
+    $("[data-answer]", current).hidden = false;
+    current.classList.add("is-flipped");
+    renderMath(current);
+    reveal.hidden = true;
+    grades.hidden = false;
+    $("[data-grade='good']", grades).focus({ preventScroll: true });
+  }
+
+  function grade(g) {
+    if (!current || grades.hidden) return;
+    const rating = { grade: g, at: new Date().toISOString() };
+    if (current.dataset.kind === "derivation") store.ex(current.dataset.card).rating = rating;
+    else (store.data.cards ??= {})[current.dataset.card] = rating;
+    store.save();
+    refreshProgress();
+    show();
+  }
+
+  reveal.addEventListener("click", flip);
+  $$("[data-grade]", grades).forEach((b) => b.addEventListener("click", () => grade(b.dataset.grade)));
+  $("[data-skip]", deck).addEventListener("click", () => { skipped.add(current); show(); });
+  $$("[data-filter]", deck).forEach((b) => b.addEventListener("click", () => {
+    filter = b.dataset.filter;
+    skipped = new Set();
+    $$("[data-filter]", deck).forEach((x) => x.setAttribute("aria-checked", x === b));
+    show();
+  }));
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest("input, textarea, select") || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === " " && !reveal.hidden) { e.preventDefault(); flip(); }
+    const g = { 1: "again", 2: "hard", 3: "good", 4: "easy" }[e.key];
+    if (g && !grades.hidden) { e.preventDefault(); grade(g); }
+  });
+  show();
+}
+
 function initDashboard() {
   const form = $("[data-start-form]");
   if (!form) return;
@@ -341,6 +450,8 @@ function initExercise(exEl) {
   if (st.tab) select(st.tab);
 
   initPredict(exEl, st, tabs);
+  initDesign(exEl, st);
+  initInterviewTimer(exEl);
   initBlanks(exEl, st);
   initHints(exEl);
   initEditor(exEl, st);
@@ -349,6 +460,80 @@ function initExercise(exEl) {
   initRating(exEl, st);
   initSplit(exEl);
   initDone(exEl, st);
+}
+
+function initDesign(exEl, st) {
+  const notes = $("[data-notes]", exEl);
+  if (notes) {
+    if (st.notes) notes.value = st.notes;
+    let t;
+    notes.addEventListener("input", () => {
+      clearTimeout(t);
+      t = setTimeout(() => { st.notes = notes.value; store.save(); }, 250);
+    });
+  }
+  const boxes = $$("[data-rubric-i]", exEl);
+  if (!boxes.length) return;
+  st.rubric ??= [];
+  const paint = () => {
+    const n = boxes.filter((b) => b.checked).length;
+    $("[data-rubric-n]", exEl).textContent = n;
+    $("[data-rubric-score]", exEl).classList.toggle("is-complete", n === boxes.length);
+    $('[data-tab-status="2"]', exEl).textContent = n ? `${n}/${boxes.length}` : "";
+  };
+  boxes.forEach((b) => {
+    b.checked = st.rubric.includes(+b.dataset.rubricI);
+    b.addEventListener("change", () => {
+      st.rubric = boxes.filter((x) => x.checked).map((x) => +x.dataset.rubricI);
+      store.save();
+      paint();
+    });
+  });
+  paint();
+}
+
+// Interview mode: a per-exercise clock in the header (only visible in interview mode).
+function initInterviewTimer(exEl) {
+  const chip = $("[data-iv-timer]", exEl);
+  if (!chip) return;
+  const total = +chip.dataset.seconds;
+  const face = $("[data-iv-face]", chip);
+  let left = total, handle = null;
+  const fmt = (s) => `${s < 0 ? "−" : ""}${Math.floor(Math.abs(s) / 60)}:${String(Math.abs(s) % 60).padStart(2, "0")}`;
+  chip.addEventListener("click", () => {
+    if (handle) {
+      clearInterval(handle);
+      handle = null;
+      left = total;
+      face.textContent = fmt(left);
+      chip.classList.remove("is-running", "is-over");
+      chip.firstChild.textContent = "⏵ ";
+      return;
+    }
+    chip.classList.add("is-running");
+    chip.firstChild.textContent = "⏹ ";
+    handle = setInterval(() => {
+      left -= 1;
+      face.textContent = fmt(left);
+      chip.classList.toggle("is-over", left < 0);
+    }, 1000);
+  });
+}
+
+function initInterviewMode() {
+  const btn = $("[data-interview-toggle]");
+  const root = document.documentElement;
+  const paint = () => {
+    const on = root.classList.contains("interview-mode");
+    btn?.setAttribute("aria-pressed", on);
+    if (btn) btn.title = on ? "Leave interview mode" : "Interview mode: hide scaffolds and solutions, add a clock";
+  };
+  btn?.addEventListener("click", () => {
+    const on = root.classList.toggle("interview-mode");
+    localStorage.setItem("wb:interview", on ? "1" : "");
+    paint();
+  });
+  paint();
 }
 
 function initPredict(exEl, st, tabs) {
@@ -789,11 +974,21 @@ function initDone(exEl, st) {
 }
 
 /* ── Boot ─────────────────────────────────────────────── */
+// Printing: closed <details> can't be opened by CSS, so open the prerequisites for the printout and restore after.
+window.addEventListener("beforeprint", () => {
+  $$("details.prereq:not([open])").forEach((d) => { d.open = true; d.dataset.printOpened = "1"; });
+});
+window.addEventListener("afterprint", () => {
+  $$("details[data-print-opened]").forEach((d) => { d.open = false; delete d.dataset.printOpened; });
+});
+
 initChrome();
+initInterviewMode();
 renderMath();
 $$(".exercise").forEach(initExercise);
 initChecklistPage();
 initDashboard();
+initDeck();
 refreshProgress();
 initIndex();
 document.documentElement.dataset.ready = "1";

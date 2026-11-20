@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block body_class %}page-drills{% endblock %}
+{% block crumb %}<a href="index.html">Workbook</a> <span aria-hidden="true">/</span> <span class="crumb-here">Drill deck</span>{% endblock %}
+{% block main %}
+<header class="chapter-head">
+  <div class="chapter-kicker">Spaced repetition · say it out loud</div>
+  <h1 class="chapter-title">Drill deck</h1>
+  <p class="chapter-summary">Every derivation and every “interviewers ask” question in the workbook, as flashcards. Answer <strong>out loud</strong> before you reveal, then rate yourself honestly: <em>Again</em> brings the card back tomorrow, <em>Hard</em> in 3 days, <em>Good</em> in 7, <em>Easy</em> in 14. ★ marks the priority derivations from your brief: the ones to know cold.</p>
+</header>
+
+<section class="deck" data-deck>
+  <div class="deck-bar">
+    <div class="seg" role="radiogroup" aria-label="Which cards">
+      <button type="button" class="seg-btn" role="radio" aria-checked="true" data-filter="all">All</button>
+      <button type="button" class="seg-btn" role="radio" aria-checked="false" data-filter="derivation">Derivations</button>
+      <button type="button" class="seg-btn" role="radio" aria-checked="false" data-filter="interview">Interview questions</button>
+      <button type="button" class="seg-btn" role="radio" aria-checked="false" data-filter="star">★ only</button>
+    </div>
+    <div class="deck-stats" aria-live="polite"><span data-deck-due>0</span> due · <span data-deck-new>0</span> new · <span data-deck-total>0</span> in view</div>
+  </div>
+
+  <div class="dk-stage" data-stage>
+    {% for c in cards %}
+    <article class="dk-card" data-card="{{ c.id }}" data-kind="{{ c.kind }}" data-star="{{ 1 if c.star else 0 }}" data-exercise="{{ c.exercise }}" hidden>
+      <div class="dk-meta">
+        <span class="type-chip type-{{ 'derive' if c.kind == 'derivation' else 'implement' }}">{{ c.kind }}</span>
+        {% if c.star %}<span class="dk-star" title="Priority derivation">★</span>{% endif %}
+        <a class="dk-src" href="{{ c.href }}"><span class="cl-ex-n">{{ c.number }}</span>{{ c.title }} ↗</a>
+        <span class="dk-due" data-due-label></span>
+      </div>
+      <div class="dk-q prose">{{ c.q }}</div>
+      <div class="dk-a" data-answer hidden>
+        {% if c.a %}
+        <div class="dk-a-label">{{ "Derivation" if c.kind == "derivation" else "A good answer mentions" }}</div>
+        <div class="prose">{{ c.a }}</div>
+        {% else %}
+        <div class="dk-a-label">Open question</div>
+        <p class="prose dk-open">There's no single answer key for this one. Check yourself against the <a href="{{ c.href }}">exercise</a>, and rate how well you could argue it.</p>
+        {% endif %}
+      </div>
+    </article>
+    {% endfor %}
+    <div class="dk-empty" data-empty hidden>
+      <div class="dk-empty-mark" aria-hidden="true">✓</div>
+      <h2>All caught up</h2>
+      <p data-empty-next></p>
+    </div>
+  </div>
+
+  <div class="dk-controls">
+    <button type="button" class="btn dk-reveal" data-reveal>Show answer <kbd>Space</kbd></button>
+    <div class="dk-grades" data-grades hidden>
+      {% for g, d in [("again", "1d"), ("hard", "3d"), ("good", "7d"), ("easy", "14d")] %}
+      <button type="button" class="btn btn-rate" data-grade="{{ g }}">{{ g | capitalize }} <span class="dk-int">{{ d }}</span> <kbd>{{ loop.index }}</kbd></button>
+      {% endfor %}
+    </div>
+    <button type="button" class="link-btn dk-skip" data-skip>Skip for now</button>
+  </div>
+</section>
+{% endblock %}

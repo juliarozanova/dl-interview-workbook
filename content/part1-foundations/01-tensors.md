@@ -18,6 +18,12 @@ In an interview, the quickest way to show fluency is to **say the shape of every
 
 **Broadcasting** lines shapes up **from the right**. Two axes are compatible when they're equal or one is $1$, and missing leading axes count as $1$. The result takes the larger size along each axis.
 
+What does it mean for an axis of size $1$ to "stretch"? Take a column `a` of shape `(3, 1)` and a row `b` of shape `(1, 4)`. NumPy behaves *as if* `a` were repeated across 4 columns and `b` down 3 rows, so both are `(3, 4)`, and then subtracts cell by cell. Entry `[i, j]` of the result is simply `a[i] - b[j]`.
+
+@figure(broadcast-stretch.svg) "Column minus row: entry `[i, j]` is `a[i] - b[j]`. The dashed copies cost no memory."
+
+So the stretched *inputs* cost nothing: the view steps **0 bytes** along the size-1 axis and reads the same number again and again. The *result*, however, is fully allocated, and that can be large. The pairwise-distance exercise below builds an `(N, M, D)` result this way.
+
 ::::exercise{id=broadcast-predict type=predict difficulty=1 time=5 runtime=browser udl="—" tags="broadcasting,tensor-shapes"}
 # What shape does broadcasting give?
 
@@ -61,17 +67,17 @@ def test_outer_difference():
 :::
 
 :::explain
-Align from the right and compare the axes pairwise:
+Write each shape as a row of boxes, push both rows against the **right** edge, and fill any empty slot on the left with a $1$. Then compare one column at a time, starting from the right:
 
-```
-a:  4  1  3
-b:     2  3      ← a missing leading axis counts as 1
-→   4  2  3
-```
+@figure(broadcast-align.svg) "Align from the right, then resolve each column: equal sizes are kept, a $1$ stretches, anything else is an error."
 
-The last axes are $3$ and $3$, which are equal. The middle axes are $1$ and $2$, so the $1$ stretches to $2$. The first axes are $4$ and a missing axis, so the result is $4$. Nothing is squeezed and nothing is copied: broadcasting is a *virtual* repeat.
+The last axes are $3$ and $3$, which are equal. The middle axes are $1$ and $2$, so the $1$ stretches to $2$. The first axes are $4$ and a missing axis, which counts as $1$, so the result is $4$. Nothing is squeezed and nothing is copied: broadcasting is a *virtual* repeat.
 
-The `(4, 3) - (4,)` case in the experiment is the one that bites in practice. Aligned from the right, $3$ meets $4$ and it errors. Worse, if the two sizes happen to be **equal** (a square batch), it silently subtracts along the wrong axis. Chapter 04's debug exercise is exactly this bug.
+The `(4, 3) - (4,)` case in the experiment (bottom of the figure) is the one that bites in practice. You probably meant "one value per row", but a 1-D array has no row or column orientation: it always lines up with the **last** axis. So $3$ meets $4$ and it errors. Worse, if the two sizes happen to be **equal** (a square batch), there is no error and it silently subtracts along the wrong axis:
+
+@figure(broadcast-keepdims.svg) "Subtracting row maxima from a square batch. Without `keepdims`, the `(3,)` vector lies down as a row."
+
+The fix is to keep the reduced axis as a $1$: `z.max(axis=1, keepdims=True)` or `m[:, None]`, both `(3, 1)`. Chapter 04's debug exercise is exactly this bug.
 
 **Interview habit:** when you write a broadcast, say it out loud as "(B, 1, D) against (1, T, D) gives (B, T, D)".
 :::
@@ -96,6 +102,10 @@ $$\|x_i - y_j\|^2 = \|x_i\|^2 + \|y_j\|^2 - 2\,x_i^\top y_j.$$
 
 - **Broadcast version:** form the `(N, M, D)` tensor of differences, square it, and sum over $D$. It's simple, but uses $O(NMD)$ memory.
 - **Expansion version:** use the identity above. The cross term is one matmul `X @ Y.T`, giving `(N, M)`, so memory is $O(NM)$. Floating-point cancellation can make tiny distances come out slightly **negative**, so clamp at $0$.
+
+The broadcast version is the column-minus-row picture from the start of the chapter, with a feature axis $D$ carried along. Insert a size-1 axis so `X` becomes a column of vectors `(N, 1, D)` and `Y` a row of vectors `(1, M, D)`. Their difference is a times table of vectors, `(N, M, D)`, and summing over $D$ collapses it to `(N, M)`:
+
+@figure(broadcast-pairwise.svg) "Each sheet is one feature. Cell `[i, j]` of the grid holds `x_i - y_j`; summing its squares over the sheets gives one distance."
 :::
 
 :::task

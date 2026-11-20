@@ -26,10 +26,10 @@ EX_CLOSE = re.compile(r"^::::\s*$")
 SEC_OPEN = re.compile(r"^:::([a-z][a-z0-9-]*)(\{.*\})?\s*$")
 SEC_CLOSE = re.compile(r"^:::\s*$")
 
-EXERCISE_TYPES = {"implement", "derive", "debug", "predict"}
+EXERCISE_TYPES = {"implement", "derive", "debug", "predict", "design"}
 KNOWN_SECTIONS = {
     "prereq", "theory", "task", "starter", "scaffold", "solution", "derivation",
-    "explain", "tests", "hints", "interview", "choices", "experiment",
+    "explain", "tests", "hints", "interview", "choices", "experiment", "rubric", "answer",
 }
 REQUIRED_ATTRS = {"id", "type", "difficulty", "time", "runtime", "udl"}
 
@@ -101,7 +101,10 @@ def split_front_matter(text: str) -> tuple[dict, str]:
 
 
 def parse_chapter(path: Path) -> Chapter:
-    meta, body = split_front_matter(path.read_text())
+    try:
+        meta, body = split_front_matter(path.read_text())
+    except yaml.YAMLError as e:
+        raise ParseError(f"{path}: front matter is not valid YAML (quote values containing ': '): {e}") from None
     lines = body.split("\n")
     blocks: list = []
     md_buf: list[str] = []
@@ -174,7 +177,9 @@ def validate(ex: Exercise) -> None:
         raise ParseError(f"{ex.source}: unknown type {ex.type!r}")
     if not ex.title:
         raise ParseError(f"{ex.source}: exercise needs a '# Title' line")
-    if ex.type == "predict":
+    if ex.type == "design":
+        need = {"task", "rubric", "answer"}
+    elif ex.type == "predict":
         need = {"task", "choices", "experiment", "explain"}
     elif ex.type == "derive":
         need = {"task", "scaffold", "derivation"}
@@ -183,6 +188,8 @@ def validate(ex: Exercise) -> None:
     absent = need - ex.sections.keys()
     if absent:
         raise ParseError(f"{ex.source} ({ex.id}): missing sections {sorted(absent)}")
+    if ex.type == "design" and len(re.findall(r"^\s*-\s+\S", ex.get("rubric").body, flags=re.M)) < 3:
+        raise ParseError(f"{ex.source} ({ex.id}): :::rubric needs at least 3 '- ' items")
     if ex.type == "predict":
         marks = re.findall(r"^\s*-\s*\[([ xX])\]", ex.get("choices").body, flags=re.M)
         if len(marks) < 2 or sum(m.lower() == "x" for m in marks) != 1:

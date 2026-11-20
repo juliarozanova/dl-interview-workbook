@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block body_class %}page-cheatsheet{% endblock %}
+{% block crumb %}<a href="index.html">Workbook</a> <span aria-hidden="true">/</span> <span class="crumb-here">Cheat sheet</span>{% endblock %}
+{% block main %}
+<header class="chapter-head">
+  <div class="chapter-kicker">Collected from every exercise · prints well</div>
+  <h1 class="chapter-title">Cheat sheet</h1>
+  <p class="chapter-summary">Every shape contract in the workbook in one place, plus the numerical-stability lessons in a sentence each. It's rebuilt automatically as chapters are added. Skim it before an interview, or print it.</p>
+  <ol class="chapter-toc">
+    <li><a href="#shapes"><span class="toc-n">1</span>Shape contracts<span class="muted small">&nbsp;· {{ sheet.shapes | length }} exercises</span></a></li>
+    <li><a href="#signatures"><span class="toc-n">2</span>Function signatures<span class="muted small">&nbsp;· {{ sheet.signatures | length }} exercises</span></a></li>
+    <li><a href="#stability"><span class="toc-n">3</span>Numerical stability<span class="muted small">&nbsp;· {{ sheet.stability | length }} exercises</span></a></li>
+  </ol>
+</header>
+
+<section class="sheet" id="shapes">
+  <h2 class="cl-title">Shape contracts</h2>
+  <p class="prose muted small sheet-lead">Say these out loud as you code: "queries are B by T by d…". Most silent bugs are shape bugs.</p>
+  <div class="sheet-grid">
+    {% for e in sheet.shapes %}
+    <article class="sheet-card">
+      <a class="sheet-src" href="{{ e.href }}"><span class="cl-ex-n">{{ e.number }}</span>{{ e.title }}</a>
+      <div class="prose sheet-table">{{ e.table }}</div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="sheet" id="signatures">
+  <h2 class="cl-title">Function signatures</h2>
+  <p class="prose muted small sheet-lead">Every function you implement, with its shapes, as stated in its docstring.</p>
+  <div class="sheet-grid">
+    {% for e in sheet.signatures %}
+    <article class="sheet-card">
+      <a class="sheet-src" href="{{ e.href }}"><span class="cl-ex-n">{{ e.number }}</span>{{ e.title }}</a>
+      <dl class="sheet-sigs">{% for s in e.sigs %}<dt><code>{{ s.sig | e }}</code></dt><dd>{{ s.doc | e }}</dd>{% endfor %}</dl>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="sheet" id="stability">
+  <h2 class="cl-title">Numerical stability</h2>
+  <ul class="sheet-list">
+    {% for e in sheet.stability %}
+    <li class="sheet-card">
+      <a class="sheet-src" href="{{ e.href }}"><span class="cl-ex-n">{{ e.number }}</span>{{ e.title }}</a>
+      <ul class="sheet-ideas">{% for i in e.ideas %}<li>{{ i }}</li>{% endfor %}</ul>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

@@ -24,6 +24,7 @@ groups:
       - {id: transformers, title: "Transformer architecture and positional encodings", tags: [transformers]}
       - {id: transformer-variants, title: "Encoder-only, decoder-only and encoder-decoder models", tags: [transformer-variants]}
       - {id: moe, title: "Mixture of experts", tags: [moe]}
+      - {id: representation, title: "Embeddings, autoencoders and PCA", tags: [autoencoders]}
   - title: Generative modelling
     items:
       - {id: vaes, title: "VAEs and ELBO derivation", tags: [vaes]}
@@ -31,6 +32,11 @@ groups:
       - {id: diffusion, title: "Diffusion models and score matching", tags: [diffusion]}
       - {id: autoregressive, title: "Autoregressive modelling", tags: [autoregressive]}
       - {id: contrastive, title: "Contrastive learning", tags: [contrastive]}
+  - title: Advanced topics
+    items:
+      - {id: rl, title: "Reinforcement learning and policy gradients", tags: [rl]}
+      - {id: flows, title: "Normalising flows and exact likelihoods", tags: [normalising-flows]}
+      - {id: scaling, title: "Scaling laws and compute-optimal training", tags: [scaling]}
   - title: Research methodology
     items:
       - {id: ablations, title: "Ablation studies", tags: [ablations]}

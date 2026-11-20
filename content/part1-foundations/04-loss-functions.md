@@ -292,7 +292,9 @@ def test_rows_sum_to_zero():
 
 So `(B, C) - (C,)` subtracts along columns, `(B, C) - (B, 1)` subtracts along rows, and `(B, C) - (B,)` only works when $B = C$. When it does run, it's wrong.
 
-**Reductions drop the axis.** `z.max(axis=1)` has shape `(B,)`, not `(B, 1)`, unless you pass `keepdims=True`.
+**Reductions drop the axis.** `z.max(axis=1)` has shape `(B,)`, not `(B, 1)`, unless you pass `keepdims=True`. A 1-D array always lines up with the **last** axis, so `(B,)` behaves like a row `(1, B)`, not a column. Here it is on a square batch, where nothing errors:
+
+@figure(broadcast-keepdims.svg) "With `keepdims=True` the maxima form a column and each row loses its own max. Without it they lie down as a row and stretch down the columns."
 :::
 
 :::task

@@ -1,0 +1,25 @@
+/* Print: Blank layers only, with room to write: for offline whiteboard practice. Also used by the cheat sheet. */
+@media print {
+  @page { margin: 16mm 14mm; }
+  :root, [data-theme="dark"] { --bg: #fff; --surface: #fff; --panel: #f6f6f6; --code-bg: #f6f6f6; --card-shadow: none; }
+  html, body { background: #fff !important; }
+  .shell { display: block; }
+  .sidebar, .topbar, .tabs, .ex-foot, .iv-banner, .skip, .continue, [data-dashboard],
+  .panel[data-panel="2"], .panel[data-panel="3"], .runner, .row, details.tests, [data-hints],
+  .local-alt, .local-box > p, .fig-replay, .chapter-progress, .done-chip, .whiteboard button { display: none !important; }
+  .panel[data-panel="1"] { display: block !important; animation: none !important; }
+  main { padding: 0; max-width: none; margin: 0; }
+  .exercise { display: block; margin: 0 0 10mm; break-before: page; }
+  .ex-card { box-shadow: none; border: 1px solid #ccc; padding: 6mm; }
+  .ex-card::before { display: none; }
+  .ex-card::after { content: "Your answer"; display: block; height: 70mm; margin-top: 5mm; padding: 2mm 3mm; border: 1px dashed #bbb; border-radius: 3mm; font: 9pt var(--font-ui); color: #999; }
+  .ex-aside { display: block; position: static; margin-top: 4mm; }
+  .note-interview em { display: none; }
+  details.prereq { break-inside: avoid; }
+  .pane-hint, .prereq summary::after { display: none !important; }
+  .editor-host .cm-editor { border: 1px solid #ccc; }
+  .cm-activeLine, .cm-activeLineGutter { background: transparent !important; }
+  a { color: inherit; text-decoration: none; }
+  .page-cheatsheet .sheet-card, .page-checklist .cl-item { break-inside: avoid; }
+  .page-cheatsheet .exercise::after, .page-cheatsheet .ex-card::after { display: none; }
+}

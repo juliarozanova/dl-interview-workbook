@@ -22,30 +22,30 @@ parts:
     title: Architectures & representation
     weeks: "4–6"
     chapters:
-      - {num: "10", slug: "10-normalisation", title: "Normalisation & residuals", udl: "Ch. 11", weeks: [4]}
-      - {num: "11", slug: "11-cnns", title: "CNNs & inductive bias", udl: "Ch. 10", weeks: [4]}
-      - {num: "12", slug: "12-rnns", title: "RNNs, LSTMs, GRUs", udl: "—", weeks: [5]}
+      - {num: "10", slug: "10-normalisation", title: "Normalisation & residuals", udl: "Ch. 11", weeks: [4], file: "part2-architectures/10-normalisation.md"}
+      - {num: "11", slug: "11-cnns", title: "CNNs & inductive bias", udl: "Ch. 10", weeks: [4], file: "part2-architectures/11-cnns.md"}
+      - {num: "12", slug: "12-rnns", title: "RNNs, LSTMs, GRUs", udl: "—", weeks: [5], file: "part2-architectures/12-rnns.md"}
       - {num: "13", slug: "13-attention", title: "Attention", udl: "Ch. 12", weeks: [5], file: "part2-architectures/13-attention.md"}
-      - {num: "14", slug: "14-transformers", title: "Transformers", udl: "Ch. 12", weeks: [5, 6]}
-      - {num: "15", slug: "15-moe", title: "Mixture of experts", udl: "—", weeks: [6]}
-      - {num: "16", slug: "16-autoencoders", title: "Embeddings & autoencoders", udl: "Ch. 14", weeks: [6]}
+      - {num: "14", slug: "14-transformers", title: "Transformers", udl: "Ch. 12", weeks: [5, 6], file: "part2-architectures/14-transformers.md"}
+      - {num: "15", slug: "15-moe", title: "Mixture of experts", udl: "—", weeks: [6], file: "part2-architectures/15-moe.md"}
+      - {num: "16", slug: "16-autoencoders", title: "Embeddings & autoencoders", udl: "Ch. 14", weeks: [6], file: "part2-architectures/16-autoencoders.md"}
   - num: III
     title: Generative & advanced
     weeks: "7–9"
     chapters:
-      - {num: "17", slug: "17-vaes", title: "VAEs & the ELBO", udl: "Ch. 17", weeks: [7]}
-      - {num: "18", slug: "18-gans", title: "GANs", udl: "Ch. 15", weeks: [7]}
-      - {num: "19", slug: "19-diffusion", title: "Diffusion & score matching", udl: "Ch. 18", weeks: [8]}
-      - {num: "20", slug: "20-autoregressive", title: "Autoregressive & flow models", udl: "Ch. 16", weeks: [8]}
-      - {num: "21", slug: "21-contrastive", title: "Contrastive & self-supervised", udl: "—", weeks: [8]}
-      - {num: "22", slug: "22-rl", title: "Reinforcement learning", udl: "Ch. 19", weeks: [9]}
-      - {num: "23", slug: "23-scaling", title: "Scaling & training dynamics", udl: "Ch. 20", weeks: [9]}
+      - {num: "17", slug: "17-vaes", title: "VAEs & the ELBO", udl: "Ch. 17", weeks: [7], file: "part3-generative/17-vaes.md"}
+      - {num: "18", slug: "18-gans", title: "GANs", udl: "Ch. 15", weeks: [7], file: "part3-generative/18-gans.md"}
+      - {num: "19", slug: "19-diffusion", title: "Diffusion & score matching", udl: "Ch. 18", weeks: [8], file: "part3-generative/19-diffusion.md"}
+      - {num: "20", slug: "20-autoregressive", title: "Autoregressive & flow models", udl: "Ch. 16", weeks: [8], file: "part3-generative/20-autoregressive.md"}
+      - {num: "21", slug: "21-contrastive", title: "Contrastive & self-supervised", udl: "—", weeks: [8], file: "part3-generative/21-contrastive.md"}
+      - {num: "22", slug: "22-rl", title: "Reinforcement learning", udl: "Ch. 19", weeks: [9], file: "part3-generative/22-rl.md"}
+      - {num: "23", slug: "23-scaling", title: "Scaling & training dynamics", udl: "Ch. 20", weeks: [9], file: "part3-generative/23-scaling.md"}
   - num: IV
     title: Research methodology & interview
     weeks: "10–12"
     chapters:
-      - {num: "24", slug: "24-evaluation", title: "Evaluation & statistics", udl: "—", weeks: [10]}
-      - {num: "25", slug: "25-leakage-shift", title: "Leakage & distribution shift", udl: "—", weeks: [10]}
-      - {num: "26", slug: "26-ablations", title: "Ablations & experimental design", udl: "—", weeks: [11]}
-      - {num: "27", slug: "27-no-framework", title: "No-framework drills", udl: "—", weeks: [11, 12]}
-      - {num: "28", slug: "28-mock-interview", title: "Mock interview kit", udl: "—", weeks: [12]}
+      - {num: "24", slug: "24-evaluation", title: "Evaluation & statistics", udl: "—", weeks: [10], file: "part4-research/24-evaluation.md"}
+      - {num: "25", slug: "25-leakage-shift", title: "Leakage & distribution shift", udl: "—", weeks: [10], file: "part4-research/25-leakage-shift.md"}
+      - {num: "26", slug: "26-ablations", title: "Ablations & experimental design", udl: "—", weeks: [11], file: "part4-research/26-ablations.md"}
+      - {num: "27", slug: "27-no-framework", title: "No-framework drills", udl: "—", weeks: [11, 12], file: "part4-research/27-no-framework.md"}
+      - {num: "28", slug: "28-mock-interview", title: "Mock interview kit", udl: "—", weeks: [12], file: "part4-research/28-mock-interview.md"}

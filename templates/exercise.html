@@ -71,6 +71,7 @@
         {{ dots(ex.difficulty) }}
         <span class="badge" title="Time estimate"><svg class="ico" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="9" r="5.5"/><path d="M8 6v3l2 1.5M6.5 1.5h3"/></svg>{{ ex.time }} min</span>
         <span class="badge badge-runtime">{{ ex.runtime_label }}</span>
+        <button type="button" class="badge iv-timer" data-iv-timer data-seconds="{{ (ex.time | int) * 60 }}" title="Interview mode: start the clock">⏵ <span data-iv-face>{{ ex.time }}:00</span></button>
         <a class="badge badge-udl" href="{{ site.udl_url }}" target="_blank" rel="noopener" title="Understanding Deep Learning">{{ "Not in UDL" if ex.udl == "—" else "UDL " ~ ex.udl ~ " ↗" }}</a>
       </div>
     </header>
@@ -116,6 +117,14 @@
       <div class="pane-label">{{ "The suspect code" if ex.type == "debug" else "Starter" }} <span class="pane-hint">already in your workspace file below</span></div>
       {{ ex.starter }}
       {{ local_box(ex) }}
+      {% elif ex.type == "design" %}
+      <div class="whiteboard" data-timer data-seconds="{{ (ex.time | int) * 60 }}">
+        <div class="wb-face" aria-live="polite"><span data-timer-face>{{ ex.time }}:00</span></div>
+        <div class="wb-copy"><strong>Answer out loud first.</strong> Talk through your answer as you would to an interviewer, then jot the key points below. There's no single right answer: the checklist shows what a strong one covers.</div>
+        <button type="button" class="btn" data-timer-toggle>Start timer</button>
+      </div>
+      <label class="notes-label" for="{{ ex.id }}-notes">Your notes <span class="pane-hint">saved in this browser</span></label>
+      <textarea class="notes" id="{{ ex.id }}-notes" data-notes placeholder="Key points, structure, the experiments you'd run…"></textarea>
       {% elif ex.type == "derive" %}
       <div class="whiteboard" data-timer data-seconds="{{ (ex.time | int) * 60 }}">
         <div class="wb-face" aria-live="polite"><span data-timer-face>{{ ex.time }}:00</span></div>
@@ -136,7 +145,17 @@
 
     {# ── Layer 2: scaffold ───────────────────────────────── #}
     <div class="panel" role="tabpanel" id="{{ ex.id }}-panel2" aria-labelledby="{{ ex.id }}-tab2" data-panel="2" hidden>
-      {% if ex.type == "predict" %}
+      {% if ex.type == "design" %}
+      <div class="scaffold-head">
+        <p class="muted small">Tick each point your answer actually covered: be honest. Anything unticked is what to practise.</p>
+        <div class="score" data-rubric-score aria-live="polite"><span data-rubric-n>0</span>/{{ ex.rubric | length }} <span class="score-label">covered</span></div>
+      </div>
+      <ul class="rubric" data-rubric>
+        {% for item in ex.rubric %}
+        <li><label class="rubric-item"><input type="checkbox" data-rubric-i="{{ loop.index0 }}"><span class="rubric-box" aria-hidden="true"></span><span class="rubric-text">{{ item }}</span></label></li>
+        {% endfor %}
+      </ul>
+      {% elif ex.type == "predict" %}
       <p class="muted small">Run the experiment and check it against your prediction. Then change it: different sizes, seeds, learning rates. The code is yours to edit.</p>
       {{ workspace(ex, "Experiment", "Run experiment") }}
       {% if ex.tests is defined %}
@@ -185,6 +204,8 @@
         <button type="button" class="btn btn-rate" data-rate="{{ r }}" aria-pressed="false">{{ r | capitalize }}</button>
         {% endfor %}
       </div>
+      {% elif ex.type == "design" %}
+      <div class="prose explanation">{{ ex.answer }}</div>
       {% elif ex.type == "predict" %}
       <div class="prose explanation">{{ ex.explain }}</div>
       {% else %}
